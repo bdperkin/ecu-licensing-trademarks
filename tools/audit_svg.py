@@ -15,9 +15,26 @@ DEFAULT_WORDLIST_NAMES = [
     "audit_wordlist.txt",
 ]
 
+DEFAULT_DUPLICATES_LIST_NAMES = [
+    "duplicates.txt",
+    "duplicate_labels.txt",
+    "ignore_duplicates.txt",
+    "duplicates_ignore.txt",
+    "duplicates",
+    "duplicate_wordlist.txt",
+]
+
 def get_default_wordlist_path():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     for name in DEFAULT_WORDLIST_NAMES:
+        candidate = os.path.join(script_dir, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+def get_default_duplicates_list_path():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    for name in DEFAULT_DUPLICATES_LIST_NAMES:
         candidate = os.path.join(script_dir, name)
         if os.path.isfile(candidate):
             return candidate
@@ -65,75 +82,167 @@ def load_wordlist(file_path):
         sys.exit(1)
     return ignore_words
 
-def audit_inkscape_svg(file_path, wordlist_path=None):
-    if wordlist_path is None:
+def load_duplicates_list(file_path):
+    if not file_path:
+        return set()
+    ignore_duplicates = set()
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                ignore_duplicates.add(line)
+    except FileNotFoundError:
+        print(f"Error: Duplicates list file not found: '{file_path}'", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading duplicates list file '{file_path}': {e}", file=sys.stderr)
+        sys.exit(1)
+    return ignore_duplicates
+
+VALID_CHECKS = {
+    'missing': {'missing', 'missing-labels', 'missing_labels', 'missing-label', 'missing_label', '1'},
+    'duplicates': {'duplicate', 'duplicates', 'duplicate-labels', 'duplicate_labels', 'duplicate-label', 'duplicate_label', '2'},
+    'spelling': {'spelling', 'spell', 'spellcheck', 'spell-check', 'spelling-errors', 'spelling_errors', 'typos', '3'},
+}
+ALL_CHECKS = {'missing', 'duplicates', 'spelling'}
+
+def normalize_checks(checks):
+    if checks is None:
+        return set(ALL_CHECKS)
+    if isinstance(checks, str):
+        checks = [c.strip() for c in checks.replace(',', ' ').split() if c.strip()]
+    selected = set()
+    for raw in checks:
+        if isinstance(raw, str) and ',' in raw:
+            sub_items = [c.strip() for c in raw.split(',') if c.strip()]
+        else:
+            sub_items = [raw]
+        for item in sub_items:
+            key = str(item).lower().strip()
+            if key == 'all':
+                return set(ALL_CHECKS)
+            found = False
+            for canonical, aliases in VALID_CHECKS.items():
+                if key == canonical or key in aliases:
+                    selected.add(canonical)
+                    found = True
+                    break
+            if not found:
+                raise ValueError(
+                    f"Unknown check: '{item}'. Valid options are: missing, duplicates, spelling, all"
+                )
+    return selected if selected else set(ALL_CHECKS)
+
+def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None, checks=None, show_stats=False):
+    try:
+        active_checks = normalize_checks(checks)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if wordlist_path is None and "spelling" in active_checks:
         wordlist_path = get_default_wordlist_path()
+
+    if duplicates_list_path is None and ("duplicates" in active_checks or show_stats):
+        duplicates_list_path = get_default_duplicates_list_path()
 
     parser = etree.XMLParser(recover=True)
     tree = etree.parse(file_path, parser)
     root = tree.getroot()
 
-    spell = SpellChecker()
-    ignore_words = load_wordlist(wordlist_path)
-    if ignore_words:
-        spell.word_frequency.load_words(ignore_words)
-
     # Find all group elements regardless of namespace prefix using local-name()
     groups = root.xpath('//*[local-name()="g"]')
     
-    missing_label_count = 0
+    missing_paths = []
     labels = []
     label_paths = {}
 
-    print("=== 1. Groups Missing 'inkscape:label' ===")
-    for i, g in enumerate(groups):
+    for g in groups:
         label_val = g.get('{http://www.inkscape.org/namespaces/inkscape}label')
         g_path = get_element_path(g)
 
         if not label_val:
-            print(f"  - Path: {g_path}")
-            missing_label_count += 1
+            missing_paths.append(g_path)
         else:
             labels.append((label_val, g_path))
             if label_val not in label_paths:
                 label_paths[label_val] = []
             label_paths[label_val].append(g_path)
 
-    print(f"Total groups missing label: {missing_label_count}\n")
+    if "missing" in active_checks:
+        print("=== 1. Groups Missing 'inkscape:label' ===")
+        for path in missing_paths:
+            print(f"  - Path: {path}")
+        print(f"Total groups missing label: {len(missing_paths)}\n")
 
-    print("=== 2. Duplicate Group Labels ===")
-    duplicates_found = False
-    for label, paths in label_paths.items():
-        if len(paths) > 1:
-            duplicates_found = True
-            print(f"  - Label '{label}' is duplicated across paths:")
-            for path in paths:
-                print(f"    * {path}")
-    if not duplicates_found:
-        print("  - No duplicate labels found.\n")
-    else:
-        print()
+    ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if "duplicates" in active_checks or show_stats else set()
+    all_duplicate_labels = {lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1}
+    reported_duplicate_labels = {lbl: paths for lbl, paths in all_duplicate_labels.items() if lbl not in ignore_duplicate_names}
+    reported_duplicate_groups_count = sum(len(paths) for paths in reported_duplicate_labels.values())
 
-    print("=== 3. Potential Spelling Errors in Labels ===")
-    spelling_issues = False
-    for label, g_path in labels:
-        # Tokenize by whitespace, underscores, hyphens, and handle camelCase
-        raw_tokens = re.split(r'[\s_\-]+', label)
-        tokens = []
-        for token in raw_tokens:
-            sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
-            if sub_tokens:
-                tokens.extend([t.lower() for t in sub_tokens if len(t) > 1])
-            elif len(token) > 1 and token.isalpha():
-                tokens.append(token.lower())
+    if "duplicates" in active_checks:
+        print("=== 2. Duplicate Group Labels ===")
+        if reported_duplicate_labels:
+            for label, paths in reported_duplicate_labels.items():
+                print(f"  - Label '{label}' ({len(paths)} occurrences) is duplicated across paths:")
+                for path in paths:
+                    print(f"    * {path}")
+            print()
+        else:
+            print("  - No duplicate labels found.\n")
 
-        misspelled = [w for w in spell.unknown(tokens) if w not in ignore_words]
-        if misspelled:
-            spelling_issues = True
-            print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
+    spelling_error_labels_count = 0
+    unique_typos = set()
+    ignore_words = set()
 
-    if not spelling_issues:
-        print("  - No spelling issues detected in labels.")
+    if "spelling" in active_checks:
+        spell = SpellChecker()
+        ignore_words = load_wordlist(wordlist_path)
+        if ignore_words:
+            spell.word_frequency.load_words(ignore_words)
+
+        print("=== 3. Potential Spelling Errors in Labels ===")
+        spelling_issues = False
+        for label, g_path in labels:
+            # Tokenize by whitespace, underscores, hyphens, and handle camelCase
+            raw_tokens = re.split(r'[\s_\-]+', label)
+            tokens = []
+            for token in raw_tokens:
+                sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                if sub_tokens:
+                    tokens.extend([t.lower() for t in sub_tokens if len(t) > 1])
+                elif len(token) > 1 and token.isalpha():
+                    tokens.append(token.lower())
+
+            misspelled = [w for w in spell.unknown(tokens) if w not in ignore_words]
+            if misspelled:
+                spelling_issues = True
+                spelling_error_labels_count += 1
+                unique_typos.update(misspelled)
+                print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
+
+        if not spelling_issues:
+            print("  - No spelling issues detected in labels.\n")
+        else:
+            print()
+
+    if show_stats:
+        print("=== Audit Statistics ===")
+        print(f"  - Total <g> elements: {len(groups)}")
+        print(f"  - Groups with labels: {len(labels)}")
+        if "missing" in active_checks:
+            print(f"  - Groups missing labels: {len(missing_paths)}")
+        if "duplicates" in active_checks:
+            print(f"  - Unique label names: {len(label_paths)}")
+            print(f"  - Duplicate label names: {len(reported_duplicate_labels)} (spanning {reported_duplicate_groups_count} groups)")
+            if ignore_duplicate_names:
+                print(f"  - Ignored duplicate names loaded: {len(ignore_duplicate_names)}")
+        if "spelling" in active_checks:
+            print(f"  - Labels with potential typos: {spelling_error_labels_count} ({len(unique_typos)} unique typo words)")
+            if ignore_words:
+                print(f"  - Ignored words loaded: {len(ignore_words)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Audit Inkscape SVG files for missing labels, duplicate labels, and spelling errors.")
@@ -145,9 +254,65 @@ def main():
         default=None,
         help="Path to a word list file containing strings/words to ignore during spell checking",
     )
+    parser.add_argument(
+        "-d", "--duplicates-list", "--ignore-duplicates", "--ignore-duplicate-labels", "--duplicates-file",
+        dest="duplicates_list_path",
+        default=None,
+        help="Path to a file containing duplicate label names to ignore",
+    )
+    parser.add_argument(
+        "-c", "--checks", "--check",
+        dest="checks",
+        nargs="+",
+        default=None,
+        metavar="CHECK",
+        help="Checks to run: 'missing' (or 1), 'duplicates' (or 2), 'spelling' (or 3), 'all' (default: all)",
+    )
+    parser.add_argument(
+        "--missing", "--check-missing",
+        dest="check_missing",
+        action="store_true",
+        help="Run check for groups missing labels",
+    )
+    parser.add_argument(
+        "--duplicates", "--duplicate", "--check-duplicates",
+        dest="check_duplicates",
+        action="store_true",
+        help="Run check for duplicate group labels",
+    )
+    parser.add_argument(
+        "--spelling", "--spell", "--check-spelling",
+        dest="check_spelling",
+        action="store_true",
+        help="Run check for potential spelling errors in labels",
+    )
+    parser.add_argument(
+        "-s", "--stats", "--statistics", "--summary",
+        dest="show_stats",
+        action="store_true",
+        help="Report summary statistics at the end of the run",
+    )
     args = parser.parse_args()
+
+    selected_checks = []
+    if args.checks:
+        selected_checks.extend(args.checks)
+    if args.check_missing:
+        selected_checks.append("missing")
+    if args.check_duplicates:
+        selected_checks.append("duplicates")
+    if args.check_spelling:
+        selected_checks.append("spelling")
+
+    checks = selected_checks if selected_checks else None
     wordlist = args.wordlist_path or args.pos_wordlist
-    audit_inkscape_svg(args.svg_path, wordlist)
+    audit_inkscape_svg(
+        args.svg_path,
+        wordlist_path=wordlist,
+        duplicates_list_path=args.duplicates_list_path,
+        checks=checks,
+        show_stats=args.show_stats,
+    )
 
 if __name__ == '__main__':
     main()
