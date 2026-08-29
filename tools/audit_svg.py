@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import re
+import argparse
 from lxml import etree
 from spellchecker import SpellChecker
+
+DEFAULT_WORDLIST_NAMES = [
+    "wordlist.txt",
+    "wordlist",
+    "words.txt",
+    "ignore_words.txt",
+    "audit_wordlist.txt",
+]
+
+def get_default_wordlist_path():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    for name in DEFAULT_WORDLIST_NAMES:
+        candidate = os.path.join(script_dir, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
 
 def get_element_path(elem):
     path_parts = []
@@ -18,12 +36,47 @@ def get_element_path(elem):
         curr = curr.getparent()
     return '/'.join(path_parts)
 
-def audit_inkscape_svg(file_path):
+def load_wordlist(file_path):
+    if not file_path:
+        return set()
+    ignore_words = set()
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                # Split line into tokens
+                raw_tokens = re.split(r'[\s_\-]+', line)
+                for token in raw_tokens:
+                    sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                    if sub_tokens:
+                        ignore_words.update(t.lower() for t in sub_tokens if len(t) > 1)
+                    elif len(token) > 1 and token.isalpha():
+                        ignore_words.add(token.lower())
+                for w in re.findall(r'\b[a-zA-Z]+\b', line.lower()):
+                    if len(w) > 1:
+                        ignore_words.add(w)
+    except FileNotFoundError:
+        print(f"Error: Word list file not found: '{file_path}'", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading word list file '{file_path}': {e}", file=sys.stderr)
+        sys.exit(1)
+    return ignore_words
+
+def audit_inkscape_svg(file_path, wordlist_path=None):
+    if wordlist_path is None:
+        wordlist_path = get_default_wordlist_path()
+
     parser = etree.XMLParser(recover=True)
     tree = etree.parse(file_path, parser)
     root = tree.getroot()
 
     spell = SpellChecker()
+    ignore_words = load_wordlist(wordlist_path)
+    if ignore_words:
+        spell.word_frequency.load_words(ignore_words)
 
     # Find all group elements regardless of namespace prefix using local-name()
     groups = root.xpath('//*[local-name()="g"]')
@@ -74,7 +127,7 @@ def audit_inkscape_svg(file_path):
             elif len(token) > 1 and token.isalpha():
                 tokens.append(token.lower())
 
-        misspelled = spell.unknown(tokens)
+        misspelled = [w for w in spell.unknown(tokens) if w not in ignore_words]
         if misspelled:
             spelling_issues = True
             print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
@@ -82,8 +135,19 @@ def audit_inkscape_svg(file_path):
     if not spelling_issues:
         print("  - No spelling issues detected in labels.")
 
+def main():
+    parser = argparse.ArgumentParser(description="Audit Inkscape SVG files for missing labels, duplicate labels, and spelling errors.")
+    parser.add_argument("svg_path", help="Path to the SVG file to audit")
+    parser.add_argument("pos_wordlist", nargs="?", default=None, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "-w", "--wordlist", "-i", "--ignore-words", "--ignore-file", "--ignore",
+        dest="wordlist_path",
+        default=None,
+        help="Path to a word list file containing strings/words to ignore during spell checking",
+    )
+    args = parser.parse_args()
+    wordlist = args.wordlist_path or args.pos_wordlist
+    audit_inkscape_svg(args.svg_path, wordlist)
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python audit_svg.py <path_to_svg>")
-        sys.exit(1)
-    audit_inkscape_svg(sys.argv[1])
+    main()
