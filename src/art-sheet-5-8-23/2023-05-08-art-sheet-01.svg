@@ -23,13 +23,13 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="0.92565359"
      inkscape:cx="612"
-     inkscape:cy="51.315093"
+     inkscape:cy="569.86761"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g9555" />
+     inkscape:current-layer="svg8338" />
   <defs
      id="defs502">
     <g
@@ -41532,7 +41532,8 @@
        id="g9547"
        inkscape:label="14">
       <g
-         id="g8601">
+         id="g8601"
+         inkscape:label="14 Background">
         <path
            fill-rule="nonzero"
            fill="#231f20"
@@ -41564,7 +41565,7 @@
       </g>
       <g
          id="g9540"
-         inkscape:label="ECU">
+         inkscape:label="14 ECU">
         <g
            id="g8970">
           <path
@@ -41607,7 +41608,8 @@
        id="g9548"
        inkscape:label="13">
       <g
-         id="g8602">
+         id="g8602"
+         inkscape:label="13 Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -41639,7 +41641,7 @@
       </g>
       <g
          id="g9541"
-         inkscape:label="ECU">
+         inkscape:label="13 ECU">
         <g
            id="g8966">
           <path
@@ -41682,7 +41684,8 @@
        id="g9549"
        inkscape:label="12">
       <g
-         id="g8603">
+         id="g8603"
+         inkscape:label="12 Background">
         <path
            fill-rule="nonzero"
            fill="#231f20"
@@ -41714,7 +41717,7 @@
       </g>
       <g
          id="g9542"
-         inkscape:label="ECU">
+         inkscape:label="12 ECU">
         <g
            id="g8962">
           <path
@@ -41775,7 +41778,8 @@
        id="g9550"
        inkscape:label="11">
       <g
-         id="g8604">
+         id="g8604"
+         inkscape:label="11 Background">
         <path
            fill-rule="nonzero"
            fill="#a2a9ad"
@@ -41807,7 +41811,7 @@
       </g>
       <g
          id="g9543"
-         inkscape:label="ECU">
+         inkscape:label="11 ECU">
         <g
            id="g9189">
           <path
@@ -41868,7 +41872,8 @@
        id="g9551"
        inkscape:label="10">
       <g
-         id="g8605">
+         id="g8605"
+         inkscape:label="10 Background">
         <path
            fill-rule="nonzero"
            fill="#ffc211"
@@ -41900,7 +41905,7 @@
       </g>
       <g
          id="g9544"
-         inkscape:label="ECU">
+         inkscape:label="10 ECU">
         <g
            id="g8958">
           <path
@@ -41961,7 +41966,8 @@
        id="g9552"
        inkscape:label="9">
       <g
-         id="g8606">
+         id="g8606"
+         inkscape:label="9 Background">
         <path
            fill-rule="nonzero"
            fill="#592d82"
@@ -41987,7 +41993,7 @@
       </g>
       <g
          id="g9545"
-         inkscape:label="ECU">
+         inkscape:label="9 ECU">
         <g
            id="g8954">
           <path
@@ -42048,7 +42054,8 @@
        id="g9553"
        inkscape:label="8">
       <g
-         id="g8607">
+         id="g8607"
+         inkscape:label="8 Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42074,7 +42081,7 @@
       </g>
       <g
          id="g9546"
-         inkscape:label="ECU">
+         inkscape:label="8 ECU">
         <g
            id="g8950">
           <path
@@ -42135,7 +42142,8 @@
        id="g9523"
        inkscape:label="One-Color Light Title">
       <g
-         id="g8637">
+         id="g8637"
+         inkscape:label="One-Color Light Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42150,7 +42158,8 @@
            id="path4490" />
       </g>
       <g
-         id="g8652">
+         id="g8652"
+         inkscape:label="One-Color Light Title Text">
         <g
            id="g8650">
           <path
@@ -42271,7 +42280,8 @@
        id="g9522"
        inkscape:label="One-Color Dark Title">
       <g
-         id="g8636">
+         id="g8636"
+         inkscape:label="One-Color Dark Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42286,7 +42296,8 @@
            id="path4488" />
       </g>
       <g
-         id="g8649">
+         id="g8649"
+         inkscape:label="One-Color Dark Title Text">
         <g
            id="g8647">
           <path
@@ -42401,7 +42412,8 @@
        id="g9521"
        inkscape:label="Gold on Black with Purple Outline Title">
       <g
-         id="g8635">
+         id="g8635"
+         inkscape:label="Gold on Black with Purple Outline Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42416,7 +42428,8 @@
            id="path4486" />
       </g>
       <g
-         id="g8646">
+         id="g8646"
+         inkscape:label="Gold on Black with Purple Outline Title Text">
         <g
            id="g8644">
           <path
@@ -42531,7 +42544,8 @@
        id="g9520"
        inkscape:label="Purple on Grey with Gold Outline Title">
       <g
-         id="g8634">
+         id="g8634"
+         inkscape:label="Purple on Grey with Gold Outline Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42546,7 +42560,8 @@
            id="path4484" />
       </g>
       <g
-         id="g8643">
+         id="g8643"
+         inkscape:label="Purple on Grey with Gold Outline Title Text">
         <g
            id="g8641">
           <path
@@ -42649,7 +42664,8 @@
        id="g9519"
        inkscape:label="Purple on Gold with Black Outline Title">
       <g
-         id="g8633">
+         id="g8633"
+         inkscape:label="Purple on Gold with Black Outline Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42664,7 +42680,8 @@
            id="path4482" />
       </g>
       <g
-         id="g8655">
+         id="g8655"
+         inkscape:label="Purple on Gold with Black Outline Title Text">
         <g
            id="g8653">
           <path
@@ -42773,7 +42790,8 @@
        id="g9518"
        inkscape:label="Gold on Purple with Black Outline Title">
       <g
-         id="g8632">
+         id="g8632"
+         inkscape:label="Gold on Purple with Black Outline Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42788,7 +42806,8 @@
            id="path4480" />
       </g>
       <g
-         id="g8658">
+         id="g8658"
+         inkscape:label="Gold on Purple with Black Outline Title Text">
         <g
            id="g8656">
           <path
@@ -42897,7 +42916,8 @@
        id="g9517"
        inkscape:label="Purple on White with Gold Outline Title">
       <g
-         id="g8631">
+         id="g8631"
+         inkscape:label="Purple on White with Gold Outline Title Background">
         <path
            fill-rule="nonzero"
            fill="#ffffff"
@@ -42912,7 +42932,8 @@
            id="path4478" />
       </g>
       <g
-         id="g8640">
+         id="g8640"
+         inkscape:label="Purple on White with Gold Outline Title Text">
         <g
            id="g8638">
           <path
@@ -43016,7 +43037,8 @@
        inkscape:label="Primary Word Mark Title"
        style="display:inline">
       <g
-         id="g8446">
+         id="g8446"
+         inkscape:label="Primary Word Mark Title Background">
         <g
            id="g8355">
           <path
@@ -43040,7 +43062,8 @@
            id="path2354" />
       </g>
       <g
-         id="g8449">
+         id="g8449"
+         inkscape:label="Primary Word Mark Title Text">
         <g
            id="g8447">
           <path
