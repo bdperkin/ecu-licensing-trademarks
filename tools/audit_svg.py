@@ -5,6 +5,19 @@ import re
 from lxml import etree
 from spellchecker import SpellChecker
 
+def get_element_path(elem):
+    path_parts = []
+    curr = elem
+    while curr is not None:
+        # Use the 'id' attribute if present, otherwise fallback to the tag name
+        identifier = curr.get('id')
+        if not identifier:
+            tag_name = curr.tag.split('}')[-1] if isinstance(curr.tag, str) else 'node'
+            identifier = f"<{tag_name}>"
+        path_parts.insert(0, identifier)
+        curr = curr.getparent()
+    return '/'.join(path_parts)
+
 def audit_inkscape_svg(file_path):
     parser = etree.XMLParser(recover=True)
     tree = etree.parse(file_path, parser)
@@ -17,31 +30,32 @@ def audit_inkscape_svg(file_path):
     
     missing_label_count = 0
     labels = []
-    label_elements = {}
+    label_paths = {}
 
     print("=== 1. Groups Missing 'inkscape:label' ===")
     for i, g in enumerate(groups):
-        # Inkscape stores labels under the inkscape namespace attribute
         label_val = g.get('{http://www.inkscape.org/namespaces/inkscape}label')
-        g_id = g.get('id', f'unnamed-group-{i}')
+        g_path = get_element_path(g)
 
         if not label_val:
-            print(f"  - Group ID: {g_id} (Index: {i}) lacks an inkscape:label")
+            print(f"  - Path: {g_path}")
             missing_label_count += 1
         else:
-            labels.append((label_val, g_id))
-            if label_val not in label_elements:
-                label_elements[label_val] = []
-            label_elements[label_val].append(g_id)
+            labels.append((label_val, g_path))
+            if label_val not in label_paths:
+                label_paths[label_val] = []
+            label_paths[label_val].append(g_path)
 
     print(f"Total groups missing label: {missing_label_count}\n")
 
     print("=== 2. Duplicate Group Labels ===")
     duplicates_found = False
-    for label, g_ids in label_elements.items():
-        if len(g_ids) > 1:
+    for label, paths in label_paths.items():
+        if len(paths) > 1:
             duplicates_found = True
-            print(f"  - Label '{label}' is duplicated across group IDs: {', '.join(g_ids)}")
+            print(f"  - Label '{label}' is duplicated across paths:")
+            for path in paths:
+                print(f"    * {path}")
     if not duplicates_found:
         print("  - No duplicate labels found.\n")
     else:
@@ -49,7 +63,7 @@ def audit_inkscape_svg(file_path):
 
     print("=== 3. Potential Spelling Errors in Labels ===")
     spelling_issues = False
-    for label, g_id in labels:
+    for label, g_path in labels:
         # Tokenize by whitespace, underscores, hyphens, and handle camelCase
         raw_tokens = re.split(r'[\s_\-]+', label)
         tokens = []
@@ -63,7 +77,7 @@ def audit_inkscape_svg(file_path):
         misspelled = spell.unknown(tokens)
         if misspelled:
             spelling_issues = True
-            print(f"  - Label '{label}' (Group ID: {g_id}) contains potential typos: {list(misspelled)}")
+            print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
 
     if not spelling_issues:
         print("  - No spelling issues detected in labels.")
