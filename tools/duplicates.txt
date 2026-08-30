@@ -146,3 +146,7 @@ ed
 v
 w
 er
+Black Outline
+Black Outline Marker
+Gold Outline Marker
+Gold Outline

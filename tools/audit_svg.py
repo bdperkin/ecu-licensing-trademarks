@@ -160,8 +160,8 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     tree = etree.parse(file_path, parser)
     root = tree.getroot()
 
-    # Find all group elements regardless of namespace prefix using local-name()
-    groups = root.xpath('//*[local-name()="g"]')
+    # Find all group elements outside <defs> regardless of namespace prefix using local-name()
+    groups = root.xpath('//*[local-name()="g"][not(ancestor::*[local-name()="defs"])]')
     
     missing_paths = []
     labels = []
