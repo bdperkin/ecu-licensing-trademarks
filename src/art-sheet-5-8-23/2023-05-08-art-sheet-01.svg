@@ -21,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.92565359"
-     inkscape:cx="612"
-     inkscape:cy="1218.0583"
+     inkscape:zoom="3.7026144"
+     inkscape:cx="331.79259"
+     inkscape:cy="1217.9232"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
@@ -28317,118 +28317,11 @@
      inkscape:label="Script Pirates"
      style="display:inline">
     <g
-       id="g9433"
-       inkscape:label="Script Pirates Title">
-      <g
-         id="g8472"
-         style="display:inline">
-        <path
-           fill-rule="nonzero"
-           fill="#592d82"
-           fill-opacity="1"
-           d="m 18,1257.875 h 585 v -18 H 18 Z m 0,0"
-           id="path2987"
-           style="display:inline" />
-      </g>
-      <g
-         id="g8776">
-        <g
-           fill="#ffffff"
-           fill-opacity="1"
-           id="g5294">
-          <use
-             xlink:href="#glyph-1-0"
-             x="274.7821"
-             y="1253.7649"
-             id="use5287" />
-          <use
-             xlink:href="#glyph-1-1"
-             x="282.17911"
-             y="1253.7649"
-             id="use5288" />
-          <use
-             xlink:href="#glyph-1-2"
-             x="288.6011"
-             y="1253.7649"
-             id="use5289" />
-          <use
-             xlink:href="#glyph-1-3"
-             x="293.3071"
-             y="1253.7649"
-             id="use5290" />
-          <use
-             xlink:href="#glyph-1-4"
-             x="296.6741"
-             y="1253.7649"
-             id="use5291" />
-          <use
-             xlink:href="#glyph-1-5"
-             x="304.91611"
-             y="1253.7649"
-             id="use5292" />
-          <use
-             xlink:href="#glyph-1-6"
-             x="309.19312"
-             y="1253.7649"
-             id="use5293" />
-          <use
-             xlink:href="#glyph-1-7"
-             x="312.44312"
-             y="1253.7649"
-             id="use5294" />
-        </g>
-        <g
-           fill="#ffffff"
-           fill-opacity="1"
-           id="g5296">
-          <use
-             xlink:href="#glyph-1-3"
-             x="319.86481"
-             y="1253.7649"
-             id="use5295" />
-          <use
-             xlink:href="#glyph-1-2"
-             x="323.23181"
-             y="1253.7649"
-             id="use5296" />
-        </g>
-        <g
-           fill="#ffffff"
-           fill-opacity="1"
-           id="g5297">
-          <use
-             xlink:href="#glyph-1-8"
-             x="327.7688"
-             y="1253.7649"
-             id="use5297" />
-        </g>
-        <g
-           fill="#ffffff"
-           fill-opacity="1"
-           id="g5300">
-          <use
-             xlink:href="#glyph-1-5"
-             x="334.68481"
-             y="1253.7649"
-             id="use5298" />
-          <use
-             xlink:href="#glyph-1-9"
-             x="338.96179"
-             y="1253.7649"
-             id="use5299" />
-          <use
-             xlink:href="#glyph-1-10"
-             x="346.4108"
-             y="1253.7649"
-             id="use5300" />
-        </g>
-      </g>
-    </g>
-    <g
        id="g9431"
        inkscape:label="55">
       <g
-         id="g8609">
+         id="g8609"
+         inkscape:label="55 Script Pirates Background">
         <path
            fill-rule="nonzero"
            fill="#592d82"
@@ -28453,7 +28346,8 @@
            id="path5008" />
       </g>
       <g
-         id="g9343">
+         id="g9343"
+         inkscape:label="55 Script Pirates">
         <path
            fill-rule="evenodd"
            fill="#ffd100"
@@ -28501,7 +28395,8 @@
            id="path5006" />
       </g>
       <g
-         id="g9344">
+         id="g9344"
+         inkscape:label="54 Script Pirates">
         <path
            fill-rule="evenodd"
            fill="#592d82"
@@ -28526,6 +28421,120 @@
            fill-opacity="1"
            d="m 233.53516,1343.4336 v -2.8945 h -0.0156 l -0.94922,2.8945 h -0.30469 l -0.94921,-2.8945 h -0.0156 v 2.8945 h -0.48437 v -3.4727 h 0.73828 l 0.87109,2.6329 0.85938,-2.6329 h 0.73437 v 3.4727 z m -4.22657,-3.0117 v 3.0117 h -0.48437 v -3.0117 h -0.91406 v -0.461 h 2.3125 v 0.461 z m 0,0"
            id="path8338" />
+      </g>
+    </g>
+    <g
+       id="g9433"
+       inkscape:label="Script Pirates Title">
+      <g
+         id="g8472"
+         style="display:inline"
+         inkscape:label="Script Pirates Title Background">
+        <path
+           fill-rule="nonzero"
+           fill="#592d82"
+           fill-opacity="1"
+           d="m 18,1257.875 h 585 v -18 H 18 Z m 0,0"
+           id="path2987"
+           style="display:inline" />
+      </g>
+      <g
+         id="g8776"
+         inkscape:label="Script Pirates Title Text">
+        <g
+           fill="#ffffff"
+           fill-opacity="1"
+           id="g5294"
+           inkscape:label="Script P">
+          <use
+             xlink:href="#glyph-1-0"
+             x="274.7821"
+             y="1253.7649"
+             id="use5287" />
+          <use
+             xlink:href="#glyph-1-1"
+             x="282.17911"
+             y="1253.7649"
+             id="use5288" />
+          <use
+             xlink:href="#glyph-1-2"
+             x="288.6011"
+             y="1253.7649"
+             id="use5289" />
+          <use
+             xlink:href="#glyph-1-3"
+             x="293.3071"
+             y="1253.7649"
+             id="use5290" />
+          <use
+             xlink:href="#glyph-1-4"
+             x="296.6741"
+             y="1253.7649"
+             id="use5291" />
+          <use
+             xlink:href="#glyph-1-5"
+             x="304.91611"
+             y="1253.7649"
+             id="use5292" />
+          <use
+             xlink:href="#glyph-1-6"
+             x="309.19312"
+             y="1253.7649"
+             id="use5293" />
+          <use
+             xlink:href="#glyph-1-7"
+             x="312.44312"
+             y="1253.7649"
+             id="use5294" />
+        </g>
+        <g
+           fill="#ffffff"
+           fill-opacity="1"
+           id="g5296"
+           inkscape:label="ir">
+          <use
+             xlink:href="#glyph-1-3"
+             x="319.86481"
+             y="1253.7649"
+             id="use5295" />
+          <use
+             xlink:href="#glyph-1-2"
+             x="323.23181"
+             y="1253.7649"
+             id="use5296" />
+        </g>
+        <g
+           fill="#ffffff"
+           fill-opacity="1"
+           id="g5297"
+           inkscape:label="a">
+          <use
+             xlink:href="#glyph-1-8"
+             x="327.7688"
+             y="1253.7649"
+             id="use5297" />
+        </g>
+        <g
+           fill="#ffffff"
+           fill-opacity="1"
+           id="g5300"
+           inkscape:label="tes">
+          <use
+             xlink:href="#glyph-1-5"
+             x="334.68481"
+             y="1253.7649"
+             id="use5298" />
+          <use
+             xlink:href="#glyph-1-9"
+             x="338.96179"
+             y="1253.7649"
+             id="use5299" />
+          <use
+             xlink:href="#glyph-1-10"
+             x="346.4108"
+             y="1253.7649"
+             id="use5300" />
+        </g>
       </g>
     </g>
   </g>
