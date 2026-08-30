@@ -137,6 +137,12 @@ def normalize_checks(checks):
                 )
     return selected if selected else set(ALL_CHECKS)
 
+def is_single_alnum_label(label):
+    if not label:
+        return False
+    s = label.strip()
+    return len(s) == 1 and s.isalnum()
+
 def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None, checks=None, show_stats=False):
     try:
         active_checks = normalize_checks(checks)
@@ -177,19 +183,21 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             label_paths[label_val].append(g_path)
 
         if len(children) == 0:
-            empty_groups.append((g_path, label_val))
+            if not is_single_alnum_label(label_val):
+                empty_groups.append((g_path, label_val))
         elif len(children) == 1:
-            child = children[0]
-            child_tag = child.tag.split('}')[-1] if isinstance(child.tag, str) else 'node'
-            child_id = child.get('id')
-            child_label = child.get('{http://www.inkscape.org/namespaces/inkscape}label')
-            child_desc_parts = [f"<{child_tag}"]
-            if child_id:
-                child_desc_parts.append(f"id='{child_id}'")
-            if child_label:
-                child_desc_parts.append(f"label='{child_label}'")
-            child_desc = ' '.join(child_desc_parts) + '>'
-            single_object_groups.append((g_path, label_val, child_desc))
+            if not is_single_alnum_label(label_val):
+                child = children[0]
+                child_tag = child.tag.split('}')[-1] if isinstance(child.tag, str) else 'node'
+                child_id = child.get('id')
+                child_label = child.get('{http://www.inkscape.org/namespaces/inkscape}label')
+                child_desc_parts = [f"<{child_tag}"]
+                if child_id:
+                    child_desc_parts.append(f"id='{child_id}'")
+                if child_label:
+                    child_desc_parts.append(f"label='{child_label}'")
+                child_desc = ' '.join(child_desc_parts) + '>'
+                single_object_groups.append((g_path, label_val, child_desc))
 
     if "missing" in active_checks:
         print("=== 1. Groups Missing 'inkscape:label' ===")
