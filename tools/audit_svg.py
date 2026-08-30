@@ -105,8 +105,10 @@ VALID_CHECKS = {
     'missing': {'missing', 'missing-labels', 'missing_labels', 'missing-label', 'missing_label', '1'},
     'duplicates': {'duplicate', 'duplicates', 'duplicate-labels', 'duplicate_labels', 'duplicate-label', 'duplicate_label', '2'},
     'spelling': {'spelling', 'spell', 'spellcheck', 'spell-check', 'spelling-errors', 'spelling_errors', 'typos', '3'},
+    'empty': {'empty', 'empty-groups', 'empty_groups', 'empty-group', 'empty_group', 'zero', 'zero-objects', 'zero_objects', '4'},
+    'single': {'single', 'single-object', 'single_object', 'single-objects', 'single_objects', 'single-child', 'single_child', 'single-child-groups', 'single-item', 'single_item', 'single-group', 'single_group', 'single-object-groups', '5'},
 }
-ALL_CHECKS = {'missing', 'duplicates', 'spelling'}
+ALL_CHECKS = {'missing', 'duplicates', 'spelling', 'empty', 'single'}
 
 def normalize_checks(checks):
     if checks is None:
@@ -131,7 +133,7 @@ def normalize_checks(checks):
                     break
             if not found:
                 raise ValueError(
-                    f"Unknown check: '{item}'. Valid options are: missing, duplicates, spelling, all"
+                    f"Unknown check: '{item}'. Valid options are: missing, duplicates, spelling, empty, single, all"
                 )
     return selected if selected else set(ALL_CHECKS)
 
@@ -158,10 +160,13 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     missing_paths = []
     labels = []
     label_paths = {}
+    empty_groups = []
+    single_object_groups = []
 
     for g in groups:
         label_val = g.get('{http://www.inkscape.org/namespaces/inkscape}label')
         g_path = get_element_path(g)
+        children = [c for c in g if isinstance(c.tag, str)]
 
         if not label_val:
             missing_paths.append(g_path)
@@ -171,11 +176,29 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
                 label_paths[label_val] = []
             label_paths[label_val].append(g_path)
 
+        if len(children) == 0:
+            empty_groups.append((g_path, label_val))
+        elif len(children) == 1:
+            child = children[0]
+            child_tag = child.tag.split('}')[-1] if isinstance(child.tag, str) else 'node'
+            child_id = child.get('id')
+            child_label = child.get('{http://www.inkscape.org/namespaces/inkscape}label')
+            child_desc_parts = [f"<{child_tag}"]
+            if child_id:
+                child_desc_parts.append(f"id='{child_id}'")
+            if child_label:
+                child_desc_parts.append(f"label='{child_label}'")
+            child_desc = ' '.join(child_desc_parts) + '>'
+            single_object_groups.append((g_path, label_val, child_desc))
+
     if "missing" in active_checks:
         print("=== 1. Groups Missing 'inkscape:label' ===")
-        for path in missing_paths:
-            print(f"  - Path: {path}")
-        print(f"Total groups missing label: {len(missing_paths)}\n")
+        if missing_paths:
+            for path in missing_paths:
+                print(f"  - Path: {path}")
+            print(f"Total groups missing label: {len(missing_paths)}\n")
+        else:
+            print("  - No groups missing labels found.\n")
 
     ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if "duplicates" in active_checks or show_stats else set()
     all_duplicate_labels = {lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1}
@@ -228,6 +251,30 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         else:
             print()
 
+    if "empty" in active_checks:
+        print("=== 4. Empty Groups (0 Objects) ===")
+        if empty_groups:
+            for path, label in empty_groups:
+                if label:
+                    print(f"  - Path: {path} (label: '{label}')")
+                else:
+                    print(f"  - Path: {path}")
+            print(f"Total empty groups: {len(empty_groups)}\n")
+        else:
+            print("  - No empty groups found.\n")
+
+    if "single" in active_checks:
+        print("=== 5. Single-Object Groups (1 Object) ===")
+        if single_object_groups:
+            for path, label, child_desc in single_object_groups:
+                if label:
+                    print(f"  - Path: {path} (label: '{label}', child: {child_desc})")
+                else:
+                    print(f"  - Path: {path} (child: {child_desc})")
+            print(f"Total single-object groups: {len(single_object_groups)}\n")
+        else:
+            print("  - No single-object groups found.\n")
+
     if show_stats:
         print("=== Audit Statistics ===")
         print(f"  - Total <g> elements: {len(groups)}")
@@ -243,9 +290,13 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             print(f"  - Labels with potential typos: {spelling_error_labels_count} ({len(unique_typos)} unique typo words)")
             if ignore_words:
                 print(f"  - Ignored words loaded: {len(ignore_words)}")
+        if "empty" in active_checks:
+            print(f"  - Empty groups (0 objects): {len(empty_groups)}")
+        if "single" in active_checks:
+            print(f"  - Single-object groups (1 object): {len(single_object_groups)}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Audit Inkscape SVG files for missing labels, duplicate labels, and spelling errors.")
+    parser = argparse.ArgumentParser(description="Audit Inkscape SVG files for missing labels, duplicate labels, spelling errors, empty groups, and single-object groups.")
     parser.add_argument("svg_path", help="Path to the SVG file to audit")
     parser.add_argument("pos_wordlist", nargs="?", default=None, help=argparse.SUPPRESS)
     parser.add_argument(
@@ -266,7 +317,7 @@ def main():
         nargs="+",
         default=None,
         metavar="CHECK",
-        help="Checks to run: 'missing' (or 1), 'duplicates' (or 2), 'spelling' (or 3), 'all' (default: all)",
+        help="Checks to run: 'missing' (1), 'duplicates' (2), 'spelling' (3), 'empty' (4), 'single' (5), 'all' (default: all)",
     )
     parser.add_argument(
         "--missing", "--check-missing",
@@ -287,6 +338,18 @@ def main():
         help="Run check for potential spelling errors in labels",
     )
     parser.add_argument(
+        "--empty", "--check-empty", "--empty-groups", "--check-empty-groups",
+        dest="check_empty",
+        action="store_true",
+        help="Run check for empty groups (0 objects)",
+    )
+    parser.add_argument(
+        "--single", "--check-single", "--single-object", "--check-single-object", "--single-child", "--check-single-child",
+        dest="check_single",
+        action="store_true",
+        help="Run check for single-object groups (1 object)",
+    )
+    parser.add_argument(
         "-s", "--stats", "--statistics", "--summary",
         dest="show_stats",
         action="store_true",
@@ -303,6 +366,10 @@ def main():
         selected_checks.append("duplicates")
     if args.check_spelling:
         selected_checks.append("spelling")
+    if args.check_empty:
+        selected_checks.append("empty")
+    if args.check_single:
+        selected_checks.append("single")
 
     checks = selected_checks if selected_checks else None
     wordlist = args.wordlist_path or args.pos_wordlist
