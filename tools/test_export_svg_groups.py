@@ -7,11 +7,12 @@ import io
 import shutil
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from tools.export_svg_groups import (
     filter_groups,
+    get_supported_formats,
     main,
     normalize_slug,
     parse_svg_groups,
@@ -204,6 +205,64 @@ class TestExportSvgGroups(unittest.TestCase):
                 f"Expected file {expected_file} was not created.",
             )
             self.assertGreater(expected_file.stat().st_size, 0)
+
+    def test_get_supported_formats(self) -> None:
+        """Test dynamic discovery of supported Inkscape export formats."""
+        formats = get_supported_formats()
+        self.assertIsInstance(formats, list)
+        self.assertIn("svg", formats)
+        self.assertIn("png", formats)
+        self.assertIn("pdf", formats)
+
+    def test_list_formats_flag(self) -> None:
+        """Test --list-formats flag outputs supported format catalog."""
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            exit_code = main(["--list-formats"])
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn("Supported Inkscape export formats", output)
+        self.assertIn(".png", output)
+        self.assertIn(".svg", output)
+
+    def test_invalid_format_rejected(self) -> None:
+        """Test that unsupported formats are rejected with an error message."""
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([str(SAMPLE_SVG), "--format", "nonexistent_fmt"])
+        self.assertEqual(exit_code, 1)
+        output = stderr.getvalue()
+        self.assertIn("Unsupported export format", output)
+        self.assertIn("Allowed formats", output)
+
+    def test_verbose_export_logging(self) -> None:
+        """Test that --verbose logs detailed subprocess execution commands."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 5",
+                        "--format",
+                        "svg",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Running:", output)
+            self.assertIn("inkscape", output)
+            self.assertIn("g0500000", output)
+            expected_file = out_path / "fmt" / "svg" / "primary-mark" / "mark-5.svg"
+            self.assertTrue(expected_file.exists())
 
 
 if __name__ == "__main__":

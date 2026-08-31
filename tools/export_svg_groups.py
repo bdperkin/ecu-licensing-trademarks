@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """SVG Group Exporter & Hierarchy Inspector.
 
-Scans an SVG file to inspect, list, filter, and export group elements
-and hierarchical subtrees into structured directory layouts.
+Scans an SVG file to inspect, list, filter, and export group elements,
+hierarchical subtrees, or full documents into structured directory layouts.
 """
 
 from __future__ import annotations
@@ -31,6 +31,37 @@ class GroupNode(NamedTuple):
     depth: int
     ancestor_labels: list[str]
     parent_id: str | None
+
+
+def get_supported_formats() -> list[str]:
+    """Dynamically query Inkscape CLI for supported export formats.
+
+    Parses the allowed export types from Inkscape's error output when an invalid
+    format is supplied to `--export-type`.
+    """
+    inkscape_path = shutil.which("inkscape")
+    if not inkscape_path:
+        return ["svg", "png", "pdf", "eps", "ps"]
+
+    result = subprocess.run(
+        [inkscape_path, "--export-type=invalid_format"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    combined = f"{result.stdout}\n{result.stderr}"
+    match = re.search(r"Allowed values:\s*\[([^\]]+)\]", combined)
+    if match:
+        raw_items = match.group(1).split(",")
+        formats: list[str] = []
+        for item in raw_items:
+            clean = re.sub(r"[^a-zA-Z0-9]", "", item).lower()
+            if clean:
+                formats.append(clean)
+        if formats:
+            return sorted(set(formats))
+
+    return ["svg", "png", "pdf", "eps", "ps"]
 
 
 def normalize_slug(text: str) -> str:
@@ -231,7 +262,15 @@ def export_group(
         elif fmt.lower() == "png":
             cmd.append(f"--export-dpi={dpi}")
 
+        if verbose:
+            print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if verbose and result.stdout:
+            print(result.stdout)
+        if verbose and result.stderr:
+            print(result.stderr, file=sys.stderr)
+
         if result.returncode != 0:
             msg = (
                 f"Failed to export group '{node.id}' ({node.label}) "
@@ -280,7 +319,15 @@ def export_full_document(
         elif fmt.lower() == "png":
             cmd.append(f"--export-dpi={dpi}")
 
+        if verbose:
+            print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if verbose and result.stdout:
+            print(result.stdout)
+        if verbose and result.stderr:
+            print(result.stderr, file=sys.stderr)
+
         if result.returncode != 0:
             msg = (
                 f"Failed to export full document '{svg_file}' "
@@ -313,6 +360,9 @@ Examples:
   # List groups explicitly:
   python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --list
 
+  # List all supported Inkscape export formats:
+  python3 tools/export_svg_groups.py --list-formats
+
   # Export a specific mark to plain SVG:
   python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "Mark 5"
 
@@ -338,6 +388,14 @@ Examples:
         "--list",
         action="store_true",
         help="List all group labels and IDs in a hierarchical tree.",
+    )
+    parser.add_argument(
+        "-F",
+        "--list-formats",
+        "--formats",
+        dest="list_formats",
+        action="store_true",
+        help="Query and display the list of all supported Inkscape export formats.",
     )
     parser.add_argument(
         "-a",
@@ -407,6 +465,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    # Dynamic format listing
+    if args.list_formats:
+        supported = get_supported_formats()
+        formatted_list = ", ".join(f".{fmt}" for fmt in supported)
+        print(f"Supported Inkscape export formats ({len(supported)}):")
+        print(f"  {formatted_list}")
+        return 0
+
     if not args.svg_file:
         parser.print_help()
         return 0
@@ -417,12 +483,24 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    # Validate output format if specified
+    if args.format:
+        clean_fmt = args.format.strip().lstrip(".").lower()
+        supported = get_supported_formats()
+        if clean_fmt not in supported:
+            print(
+                f"Error: Unsupported export format '{args.format}'.\n"
+                f"Allowed formats ({len(supported)}): {', '.join(f'.{f}' for f in supported)}",
+                file=sys.stderr,
+            )
+            return 1
+
     # Output directory (Requirement 11)
     output_dir = args.output_dir if args.output_dir else Path.cwd()
 
     # Full document export mode
     if args.full_document:
-        fmt = args.format or "svg"
+        fmt = (args.format or "svg").strip().lstrip(".").lower()
         try:
             export_full_document(
                 svg_file=args.svg_file,
@@ -462,7 +540,7 @@ def main(argv: list[str] | None = None) -> int:
     # Determine export format
     # Requirement 9: If group provided, but no format provided, default to svg
     # Requirement 10: If format provided, but no group provided, export all top-level groups
-    fmt = args.format or "svg"
+    fmt = (args.format or "svg").strip().lstrip(".").lower()
     top_level_default = args.pattern is None and args.format is not None
 
     targets = filter_groups(groups, args.pattern, top_level_only=top_level_default)

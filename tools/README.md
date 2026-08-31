@@ -60,12 +60,18 @@ python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -c f
 - **File only (`python3 tools/export_svg_groups.py <file.svg>`)**: Prints an ASCII/Unicode hierarchy tree showing all groups with their IDs and labels.
 - **Group filtering (`-g`, `--group`, `-p`, `--pattern`)**: Filters groups by exact label, regex (e.g. `^Mark [1-5]$`), or glob (e.g. `Mark *`).
 - **Format defaults (`-f`, `--format`)**: Defaults to `svg` when a group filter is supplied. Defaults to exporting all 25 top-level section groups when `--format` is supplied without a group filter.
+- **Format discovery (`-F`, `--list-formats`, `--formats`)**: Dynamically queries the local Inkscape CLI and lists all supported export formats.
+- **Format validation**: Validates requested formats against dynamically discovered formats and reports allowed formats if unsupported.
 - **Full document export (`-a`, `--all`, `--full`, `--document`)**: Exports the entire SVG canvas as-is to `<output_dir>/fmt/<format>/<basename>.<format>`.
+- **Verbose logging (`-v`, `--verbose`)**: Enables detailed logging and displays exact subprocess CLI commands and progress.
 - **Hierarchy preservation**: Exports into `<output_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/.../<leaf_name>.<format>` with lowercase hyphenated slugs.
 
 ### CLI Usage Examples
 
 ```bash
+# View all supported Inkscape export formats:
+python3 tools/export_svg_groups.py --list-formats
+
 # View hierarchical tree of groups and IDs:
 python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg
 
