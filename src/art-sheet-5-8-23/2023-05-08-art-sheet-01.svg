@@ -21,15 +21,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="2.6181437"
-     inkscape:cx="806.48743"
-     inkscape:cy="654.85328"
+     inkscape:zoom="1.8513072"
+     inkscape:cx="321.12445"
+     inkscape:cy="1986.4342"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g8911" />
+     inkscape:current-layer="g8583" />
   <defs
      id="defs502">
     <pattern
@@ -15877,7 +15877,8 @@
            id="g8593"
            inkscape:label="Horizontal Signal Flag Pattern Title Text">
           <g
-             id="g8581">
+             id="g8581"
+             inkscape:label="Horizontal Pattern Signal Flag Pattern Text">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -15982,7 +15983,8 @@
                id="path4395" />
           </g>
           <g
-             id="g8591">
+             id="g8591"
+             inkscape:label="Horizontal Pattern Signal Flag Pattern Left">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -15997,7 +15999,8 @@
                id="path4410" />
           </g>
           <g
-             id="g8592">
+             id="g8592"
+             inkscape:label="Horizontal Pattern Signal Flag Pattern Right">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -17390,7 +17393,8 @@
            id="g8590"
            inkscape:label="Horizontal Icon Pattern Title Text">
           <g
-             id="g8580">
+             id="g8580"
+             inkscape:label="Horizontal Pattern Icon Pattern Text">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -17459,7 +17463,8 @@
                id="path4378" />
           </g>
           <g
-             id="g8588">
+             id="g8588"
+             inkscape:label="Horizontal Pattern Icon Pattern Left">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -17474,7 +17479,8 @@
                id="path4406" />
           </g>
           <g
-             id="g8589">
+             id="g8589"
+             inkscape:label="Horizontal Pattern Icon Pattern Right">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -18567,7 +18573,8 @@
            id="g8587"
            inkscape:label="Vertical Signal Flag Pattern Title Text">
           <g
-             id="g8579">
+             id="g8579"
+             inkscape:label="Vertical Pattern Signal Flag Pattern Text">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -18672,7 +18679,8 @@
                id="path4367" />
           </g>
           <g
-             id="g8585">
+             id="g8585"
+             inkscape:label="Vertical Pattern Signal Flag Pattern Left">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -18687,7 +18695,8 @@
                id="path4402" />
           </g>
           <g
-             id="g8586">
+             id="g8586"
+             inkscape:label="Vertical Pattern Signal Flag Pattern Right">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -20129,7 +20138,8 @@
            id="g8584"
            inkscape:label="Vertical Icon Pattern Title Text">
           <g
-             id="g8578">
+             id="g8578"
+             inkscape:label="Vertical Pattern Icon Pattern Text">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -20198,7 +20208,8 @@
                id="path4350" />
           </g>
           <g
-             id="g8582">
+             id="g8582"
+             inkscape:label="Vertical Pattern Icon Pattern Left">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -20213,7 +20224,8 @@
                id="path4398" />
           </g>
           <g
-             id="g8583">
+             id="g8583"
+             inkscape:label="Vertical Pattern Icon Pattern Right">
             <path
                fill-rule="nonzero"
                fill="#231f20"
@@ -29529,7 +29541,8 @@
            id="g9322"
            inkscape:label="50 Mark">
           <g
-             id="g9320">
+             id="g9320"
+             inkscape:label="50 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffc808"
@@ -29898,7 +29911,8 @@
                id="path7943" />
           </g>
           <g
-             id="g9321">
+             id="g9321"
+             inkscape:label="50 SWIMMING &amp; DIVING">
             <path
                fill-rule="nonzero"
                fill="#ffc808"
@@ -30031,7 +30045,8 @@
            id="g9301"
            inkscape:label="45 Mark">
           <g
-             id="g9299">
+             id="g9299"
+             inkscape:label="45 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffc808"
@@ -30400,7 +30415,8 @@
                id="path7499" />
           </g>
           <g
-             id="g9300">
+             id="g9300"
+             inkscape:label="45 SWIMMING &amp; DIVING">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -30533,7 +30549,8 @@
            id="g9319"
            inkscape:label="40 Mark">
           <g
-             id="g9313">
+             id="g9313"
+             inkscape:label="40 SWIMMING &amp; DIVING">
             <path
                fill-rule="nonzero"
                fill="#ffc808"
@@ -30626,9 +30643,11 @@
                id="path7875" />
           </g>
           <g
-             id="g9318">
+             id="g9318"
+             inkscape:label="40 ECU">
             <g
-               id="g9314">
+               id="g9314"
+               inkscape:label="40 C">
               <path
                  fill-rule="nonzero"
                  fill="#ffc808"
@@ -30643,7 +30662,8 @@
                  id="path7877" />
             </g>
             <g
-               id="g9315">
+               id="g9315"
+               inkscape:label="40 U">
               <path
                  fill-rule="nonzero"
                  fill="#ffc808"
@@ -30658,7 +30678,8 @@
                  id="path7879" />
             </g>
             <g
-               id="g9316">
+               id="g9316"
+               inkscape:label="40 E">
               <path
                  fill-rule="nonzero"
                  fill="#ffc808"
@@ -30725,7 +30746,8 @@
            id="g9304"
            inkscape:label="49 Mark">
           <g
-             id="g9302">
+             id="g9302"
+             inkscape:label="49 SOCCER">
             <path
                fill-rule="nonzero"
                fill="#5b2d82"
@@ -30764,7 +30786,8 @@
                id="path7520" />
           </g>
           <g
-             id="g9303">
+             id="g9303"
+             inkscape:label="49 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -30831,7 +30854,8 @@
            id="g9298"
            inkscape:label="44 Mark">
           <g
-             id="g9296">
+             id="g9296"
+             inkscape:label="44 SOCCER">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -30870,7 +30894,8 @@
                id="path7434" />
           </g>
           <g
-             id="g9297">
+             id="g9297"
+             inkscape:label="44 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -30994,7 +31019,8 @@
            id="g9295"
            inkscape:label="48 Mark">
           <g
-             id="g9293">
+             id="g9293"
+             inkscape:label="48 MEN'S BASKETBALL">
             <path
                fill-rule="nonzero"
                fill="#5b2d82"
@@ -31087,7 +31113,8 @@
                id="path7424" />
           </g>
           <g
-             id="g9294">
+             id="g9294"
+             inkscape:label="48 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -31154,7 +31181,8 @@
            id="g9292"
            inkscape:label="43 Mark">
           <g
-             id="g9290">
+             id="g9290"
+             inkscape:label="43 MEN'S BASKETBALL">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -31247,7 +31275,8 @@
                id="path7405" />
           </g>
           <g
-             id="g9291">
+             id="g9291"
+             inkscape:label="43 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -31371,7 +31400,8 @@
            id="g9289"
            inkscape:label="47 Mark">
           <g
-             id="g9287">
+             id="g9287"
+             inkscape:label="47 BASEBALL">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -31422,7 +31452,8 @@
                id="path7386" />
           </g>
           <g
-             id="g9288">
+             id="g9288"
+             inkscape:label="47 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -31489,7 +31520,8 @@
            id="g9286"
            inkscape:label="42 Mark">
           <g
-             id="g9284">
+             id="g9284"
+             inkscape:label="42 BASEBALL">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -31540,7 +31572,8 @@
                id="path7374" />
           </g>
           <g
-             id="g9285">
+             id="g9285"
+             inkscape:label="42 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -31664,7 +31697,8 @@
            id="g9280"
            inkscape:label="46 Mark">
           <g
-             id="g9278">
+             id="g9278"
+             inkscape:label="46 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
@@ -31691,7 +31725,8 @@
                id="path7346" />
           </g>
           <g
-             id="g9279">
+             id="g9279"
+             inkscape:label="46 FOOTBALL">
             <path
                fill-rule="nonzero"
                fill="#5b2d82"
@@ -31782,7 +31817,8 @@
            id="g9283"
            inkscape:label="41 Mark">
           <g
-             id="g9281">
+             id="g9281"
+             inkscape:label="41 FOOTBALL">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -31833,7 +31869,8 @@
                id="path7362" />
           </g>
           <g
-             id="g9282">
+             id="g9282"
+             inkscape:label="41 Logo">
             <path
                fill-rule="nonzero"
                fill="#ffffff"
