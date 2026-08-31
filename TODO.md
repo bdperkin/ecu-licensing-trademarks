@@ -105,6 +105,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Resolve all false-positive typo fragments and trim `tools/wordlist.txt` down to 10 valid proper nouns/acronyms
   - [x] Alphabetize and trim `tools/duplicates.txt` down to 38 entries
   - [x] Adopt uniform `Mark N` prefixes across all 91 marks (`Mark 1` through `Mark 91`)
+  - [x] Standardize background layer wrapping and numbering (`[N] Background`) across all marks (Marks 15–20, 52, 55, 84, 87)
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
@@ -112,9 +113,6 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 ### 2. Remaining / Optimization Opportunities
 
-- [ ] **Background Layer Wrapping & Naming Consistency**
-  - [ ] Wrap raw background `<path>` elements into `<g>` containers in Marks 15–20, Script 55, and Mark 84 for structural uniformity
-  - [ ] Normalize descriptive background labels to standard numbering (e.g. `Mark 52`: `Pirate State of Mind Background` -> `52 Background`; `Mark 87`: `Stacked White ECU Background` -> `87 Background`)
 - [ ] **Wordmark Letter Decomposition Completeness**
   - [ ] Decompose single-color solid wordmarks into individual letter groups if full letter-level atomicity is desired across all variants:
     - [ ] Primary Word Mark 13 and 14 (E, C, U)

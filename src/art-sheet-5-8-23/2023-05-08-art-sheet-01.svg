@@ -24,15 +24,16 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.33627946"
-     inkscape:cx="611.09887"
-     inkscape:cy="1188"
-     inkscape:window-width="1920"
-     inkscape:window-height="1008"
+     inkscape:zoom="1.3451178"
+     inkscape:cx="609.61202"
+     inkscape:cy="473.93617"
+     inkscape:window-width="2560"
+     inkscape:window-height="1368"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g9405" />
+     inkscape:current-layer="svg8338"
+     showgrid="false" />
   <defs
      id="defs502">
     <pattern
@@ -14519,19 +14520,21 @@
        style="display:inline">
       <g
          id="g8503"
-         inkscape:label="Stacked White ECU Background">
+         inkscape:label="87 Background">
         <path
            fill-rule="nonzero"
            fill="#592d82"
            fill-opacity="1"
            d="m 817.04687,1805.5703 h 195.00003 v 115.3281 H 817.04687 Z m 0,0"
-           id="path3352" />
+           id="path3352"
+           style="display:inline" />
         <path
            fill-rule="nonzero"
            fill="#ffffff"
            fill-opacity="1"
            d="M 818.04687,1920.0313 H 1011.0469 V 1806.4375 H 818.04687 Z m 195.00003,1.7343 H 816.04687 v -117.0625 h 197.00003 z m 0,0"
-           id="path3353" />
+           id="path3353"
+           style="display:none" />
       </g>
       <g
          id="g8758"
@@ -14776,12 +14779,25 @@
        id="g9360"
        inkscape:label="Mark 84"
        style="display:inline">
-      <path
-         fill-rule="nonzero"
-         fill="#592d82"
-         fill-opacity="1"
-         d="m 817.04687,1692.4688 h 195.00003 v 111.8046 H 817.04687 Z m 0,0"
-         id="path3351" />
+      <g
+         id="g103"
+         inkscape:label="84 Background"
+         style="display:inline">
+        <path
+           fill-rule="nonzero"
+           fill="#592d82"
+           fill-opacity="1"
+           d="m 817.04687,1692.4688 h 195.00003 v 111.8046 H 817.04687 Z m 0,0"
+           id="path3351"
+           style="display:inline" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="M 818.04687,1805.1681 H 1011.0469 V 1691.5742 H 818.04687 Z m 195.00003,1.7343 H 816.04687 v -117.0625 h 197.00003 z m 0,0"
+           id="path103"
+           style="display:inline" />
+      </g>
       <g
          id="g8755"
          inkscape:label="84">
@@ -28756,12 +28772,23 @@
     <g
        id="g9431"
        inkscape:label="Mark 55">
-      <path
-         fill-rule="nonzero"
-         fill="#592d82"
-         fill-opacity="1"
-         d="m 310.99219,1262.7813 h 291.9375 v 94.6953 h -291.9375 z m 0,0"
-         id="path4441" />
+      <g
+         id="g203"
+         inkscape:label="55 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#592d82"
+           fill-opacity="1"
+           d="m 310.99219,1262.7813 h 291.9375 v 94.6953 h -291.9375 z m 0,0"
+           id="path4441" />
+        <path
+           fill-rule="nonzero"
+           fill="#592d82"
+           fill-opacity="1"
+           d="m 310.99219,1262.7813 h 291.9375 v 94.6953 h -291.9375 z m 0,0"
+           id="path203"
+           style="stroke:#ffffff;stroke-opacity:1;fill:none;stroke-width:1.0015748;stroke-dasharray:none" />
+      </g>
       <g
          id="g8725"
          inkscape:label="55">
@@ -29003,7 +29030,7 @@
        style="display:inline">
       <g
          id="g8506"
-         inkscape:label="Pirate State of Mind Background">
+         inkscape:label="52 Background">
         <path
            fill-rule="nonzero"
            fill="#ffc211"
@@ -39241,13 +39268,15 @@
            fill="#231f20"
            fill-opacity="1"
            d="M 1060.7148,580.5 H 1206 v 91.18359 h -145.2852 z m 0,0"
-           id="path4449" />
+           id="path4449"
+           style="display:inline" />
         <path
            fill-rule="nonzero"
            fill="#ffffff"
            fill-opacity="1"
            d="M 1061.7148,670.68359 H 1205 V 581.5 h -143.2852 z m 145.2852,2 H 1059.7148 V 579.5 H 1207 Z m 0,0"
-           id="path4450" />
+           id="path4450"
+           style="display:inline" />
       </g>
       <g
          id="g8699"
@@ -40888,9 +40917,9 @@
            fill-rule="nonzero"
            fill="#ffffff"
            fill-opacity="1"
-           d="m 1039.3359,579.5 h 167.4922 v -76.75 h -167.4922 z m 169.8321,2 h -172.1719 v -80.75 h 172.1719 z m 0,0"
+           d="m 1061.7556,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
            id="path4443"
-           style="display:inline" />
+           style="display:inline;stroke-width:0.924907" />
       </g>
       <g
          id="g8692"
@@ -40974,12 +41003,23 @@
     <g
        id="g9533"
        inkscape:label="Mark 20">
-      <path
-         fill-rule="nonzero"
-         fill="#ffffff"
-         fill-opacity="1"
-         d="M 915.73828,501.75 H 1061.0859 V 580.5 H 915.73828 Z m 0,0"
-         id="path4442" />
+      <g
+         id="g5198"
+         inkscape:label="20 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="M 915.73828,501.75 H 1061.0859 V 580.5 H 915.73828 Z m 0,0"
+           id="path4442" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="M 916.77119,579.5 H 1060.0529 V 502.75 H 916.77119 Z m 145.28341,2 H 914.76959 v -80.75 h 147.28501 z m 0,0"
+           id="path303"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8691"
          inkscape:label="20">
@@ -41062,12 +41102,23 @@
     <g
        id="g9534"
        inkscape:label="Mark 19">
-      <path
-         fill-rule="nonzero"
-         fill="#231f20"
-         fill-opacity="1"
-         d="M 771.05859,501.75 H 914.46875 V 580.5 H 771.05859 Z m 0,0"
-         id="path4444" />
+      <g
+         id="g5199"
+         inkscape:label="19 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#231f20"
+           fill-opacity="1"
+           d="M 771.05859,501.75 H 914.46875 V 580.5 H 771.05859 Z m 0,0"
+           id="path4444" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="m 771.12277,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
+           id="path403"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8690"
          inkscape:label="19">
@@ -41220,12 +41271,23 @@
     <g
        id="g9535"
        inkscape:label="Mark 18">
-      <path
-         fill-rule="nonzero"
-         fill="#a2a9ad"
-         fill-opacity="1"
-         d="M 625.96484,501.75 H 769.18359 V 580.5 H 625.96484 Z m 0,0"
-         id="path4445" />
+      <g
+         id="g5200"
+         inkscape:label="18 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#a2a9ad"
+           fill-opacity="1"
+           d="M 625.96484,501.75 H 769.18359 V 580.5 H 625.96484 Z m 0,0"
+           id="path4445" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="m 625.93332,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
+           id="path5195"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8689"
          inkscape:label="18">
@@ -41378,12 +41440,23 @@
     <g
        id="g9536"
        inkscape:label="Mark 17">
-      <path
-         fill-rule="nonzero"
-         fill="#ffc211"
-         fill-opacity="1"
-         d="M 480.67969,501.75 H 623.89844 V 580.5 H 480.67969 Z m 0,0"
-         id="path4446" />
+      <g
+         id="g5201"
+         inkscape:label="17 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#ffc211"
+           fill-opacity="1"
+           d="M 480.67969,501.75 H 623.89844 V 580.5 H 480.67969 Z m 0,0"
+           id="path4446" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="m 480.64817,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
+           id="path5196"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8688"
          inkscape:label="17">
@@ -41536,12 +41609,23 @@
     <g
        id="g9537"
        inkscape:label="Mark 16">
-      <path
-         fill-rule="nonzero"
-         fill="#592d82"
-         fill-opacity="1"
-         d="M 335.39453,501.75 H 478.23828 V 580.5 H 335.39453 Z m 0,0"
-         id="path4447" />
+      <g
+         id="g5202"
+         inkscape:label="16 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#592d82"
+           fill-opacity="1"
+           d="M 335.39453,501.75 H 478.23828 V 580.5 H 335.39453 Z m 0,0"
+           id="path4447" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="m 335.17551,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
+           id="path5197"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8687"
          inkscape:label="16">
@@ -41694,12 +41778,23 @@
     <g
        id="g9538"
        inkscape:label="Mark 15">
-      <path
-         fill-rule="nonzero"
-         fill="#ffffff"
-         fill-opacity="1"
-         d="M 189,501.75 H 334.34766 V 580.5 H 189 Z m 0,0"
-         id="path4448" />
+      <g
+         id="g5203"
+         inkscape:label="15 Background">
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="M 189,501.75 H 334.34766 V 580.5 H 189 Z m 0,0"
+           id="path4448" />
+        <path
+           fill-rule="nonzero"
+           fill="#ffffff"
+           fill-opacity="1"
+           d="m 190.03293,579.5 h 143.2817 v -76.75 h -143.2817 z m 145.2834,2 h -147.285 v -80.75 h 147.285 z m 0,0"
+           id="path5198"
+           style="display:inline;stroke-width:0.924907" />
+      </g>
       <g
          id="g8686"
          inkscape:label="15">
