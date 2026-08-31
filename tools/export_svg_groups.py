@@ -21,6 +21,20 @@ from lxml import etree
 
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
+DEFAULT_TIMEOUT = 120.0
+
+RASTER_CONVERT_FORMATS = {
+    "jpg",
+    "jpeg",
+    "webp",
+    "tiff",
+    "tif",
+    "xcf",
+    "gif",
+    "bmp",
+    "ico",
+    "avif",
+}
 
 
 class GroupNode(NamedTuple):
@@ -34,7 +48,7 @@ class GroupNode(NamedTuple):
     parent_id: str | None
 
 
-def get_supported_formats() -> list[str]:
+def get_supported_formats(timeout: float = 30.0) -> list[str]:
     """Dynamically query Inkscape CLI for supported export formats.
 
     Parses the allowed export types from Inkscape's error output when an invalid
@@ -44,23 +58,27 @@ def get_supported_formats() -> list[str]:
     if not inkscape_path:
         return ["svg", "png", "pdf", "eps", "ps"]
 
-    result = subprocess.run(
-        [inkscape_path, "--export-type=invalid_format"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    combined = f"{result.stdout}\n{result.stderr}"
-    match = re.search(r"Allowed values:\s*\[([^\]]+)\]", combined)
-    if match:
-        raw_items = match.group(1).split(",")
-        formats: list[str] = []
-        for item in raw_items:
-            clean = re.sub(r"[^a-zA-Z0-9]", "", item).lower()
-            if clean:
-                formats.append(clean)
-        if formats:
-            return sorted(set(formats))
+    try:
+        result = subprocess.run(
+            [inkscape_path, "--export-type=invalid_format"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+        combined = f"{result.stdout}\n{result.stderr}"
+        match = re.search(r"Allowed values:\s*\[([^\]]+)\]", combined)
+        if match:
+            raw_items = match.group(1).split(",")
+            formats: list[str] = []
+            for item in raw_items:
+                clean = re.sub(r"[^a-zA-Z0-9]", "", item).lower()
+                if clean:
+                    formats.append(clean)
+            if formats:
+                return sorted(set(formats))
+    except (subprocess.SubprocessError, OSError):
+        pass
 
     return ["svg", "png", "pdf", "eps", "ps"]
 
@@ -218,24 +236,71 @@ def filter_groups(
     return matched
 
 
+def verify_exported_file(
+    output_file: Path,
+    verbose: bool = False,
+    timeout: float = 15.0,
+) -> None:
+    """Verify that an exported output file exists, is non-empty, and passes sanity validation."""
+    if not output_file.exists():
+        msg = f"Export failed: Destination file '{output_file}' was not created."
+        raise RuntimeError(msg)
+
+    file_size = output_file.stat().st_size
+    if file_size == 0:
+        msg = f"Export failed: Destination file '{output_file}' was created but is empty (0 bytes)."
+        raise RuntimeError(msg)
+
+    # Bonus: Sanity check file integrity via ImageMagick if available
+    magick_path = shutil.which("magick") or shutil.which("identify")
+    if magick_path:
+        cmd = (
+            [magick_path, "identify", str(output_file)]
+            if "magick" in magick_path
+            else [magick_path, str(output_file)]
+        )
+        try:
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout,
+            )
+            if res.returncode == 0 and verbose:
+                print(
+                    f"[VERBOSE] ImageMagick sanity check passed: {res.stdout.strip()}"
+                )
+            elif res.returncode != 0 and verbose:
+                # Some vector formats (e.g. hpgl, pov) might not be fully identified by identify
+                print(
+                    f"[VERBOSE] Note: ImageMagick identify non-zero ({res.returncode}): {res.stderr.strip()}"
+                )
+        except (subprocess.SubprocessError, OSError):
+            pass
+
+
 def export_group(
     svg_file: Path,
     node: GroupNode,
     fmt: str,
     output_base_dir: Path,
     dpi: float = 229.33,
+    timeout: float = DEFAULT_TIMEOUT,
     dry_run: bool = False,
     verbose: bool = False,
 ) -> Path:
     """Export an individual group element to the destination fmt hierarchy."""
-    # Ensure inkscape CLI is available
     inkscape_path = shutil.which("inkscape")
     if not inkscape_path:
         msg = "Inkscape CLI executable ('inkscape') is required for exporting groups."
         raise RuntimeError(msg)
 
+    magick_path = shutil.which("magick") or shutil.which("convert")
+
     # 1. Format directory: <output_base_dir>/fmt/<format>/
-    fmt_dir = output_base_dir / "fmt" / fmt.lower()
+    fmt_clean = fmt.strip().lstrip(".").lower()
+    fmt_dir = output_base_dir / "fmt" / fmt_clean
 
     # 2. Ancestor directories: <output_base_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/...
     ancestor_path_parts = [normalize_slug(a) for a in node.ancestor_labels]
@@ -245,13 +310,13 @@ def export_group(
 
     # 3. Leaf filename: <leaf_label>.<fmt>
     leaf_name = normalize_slug(node.label or node.id)
-    output_file = target_dir / f"{leaf_name}.{fmt.lower()}"
+    output_file = target_dir / f"{leaf_name}.{fmt_clean}"
 
     if not dry_run:
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        fmt_clean = fmt.lower()
         if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
+            # Native C++ direct export
             cmd = [
                 inkscape_path,
                 str(svg_file),
@@ -268,7 +333,21 @@ def export_group(
             if verbose:
                 print(f"[VERBOSE] Running: {' '.join(cmd)}")
 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired as e:
+                msg = (
+                    f"Export of group '{node.id}' ({node.label}) timed out "
+                    f"after {timeout} seconds: {' '.join(cmd)}"
+                )
+                raise RuntimeError(msg) from e
+
             if verbose and result.stdout:
                 print(result.stdout)
             if verbose and result.stderr:
@@ -277,12 +356,82 @@ def export_group(
             if result.returncode != 0:
                 msg = (
                     f"Failed to export group '{node.id}' ({node.label}) "
-                    f"to {output_file}:\n{result.stderr}"
+                    f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
                 )
                 raise RuntimeError(msg)
+
+        elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
+            # High-fidelity raster pipeline: Render isolated PNG with Cairo -> Convert via ImageMagick
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
+                tmp_png_path = Path(tmp_png.name)
+
+            try:
+                render_cmd = [
+                    inkscape_path,
+                    str(svg_file),
+                    f"--export-id={node.id}",
+                    "--export-id-only",
+                    f"--export-dpi={dpi}",
+                    f"--export-filename={tmp_png_path}",
+                ]
+                if verbose:
+                    print(
+                        f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}"
+                    )
+
+                try:
+                    render_res = subprocess.run(
+                        render_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Raster render of group '{node.id}' ({node.label}) timed out "
+                        f"after {timeout} seconds: {' '.join(render_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if (
+                    render_res.returncode != 0
+                    or not tmp_png_path.exists()
+                    or tmp_png_path.stat().st_size == 0
+                ):
+                    msg = f"Failed to render intermediate PNG for group '{node.id}' ({node.label}):\n{render_res.stderr}"
+                    raise RuntimeError(msg)
+
+                # Convert PNG to target raster format via ImageMagick
+                convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
+                if verbose:
+                    print(f"[VERBOSE] Converting raster image: {' '.join(convert_cmd)}")
+
+                try:
+                    conv_res = subprocess.run(
+                        convert_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"ImageMagick conversion of '{node.id}' timed out "
+                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if conv_res.returncode != 0:
+                    msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
+                    raise RuntimeError(msg)
+            finally:
+                if tmp_png_path.exists():
+                    tmp_png_path.unlink()
+
         else:
-            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, etc.)
-            # Step 1: Extract isolated SVG sub-tree to avoid processing the full master document in Python extensions
+            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, tar, etc.)
+            # Step 1: Extract isolated SVG sub-tree
             with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
                 tmp_svg_path = Path(tmp_svg.name)
 
@@ -297,10 +446,27 @@ def export_group(
                 ]
                 if verbose:
                     print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
-                extract_res = subprocess.run(
-                    extract_cmd, capture_output=True, text=True, check=False
-                )
-                if extract_res.returncode != 0:
+
+                try:
+                    extract_res = subprocess.run(
+                        extract_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Isolation of group '{node.id}' ({node.label}) timed out "
+                        f"after {timeout} seconds: {' '.join(extract_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if (
+                    extract_res.returncode != 0
+                    or not tmp_svg_path.exists()
+                    or tmp_svg_path.stat().st_size == 0
+                ):
                     msg = (
                         f"Failed to isolate group '{node.id}' ({node.label}) "
                         f"to temporary SVG:\n{extract_res.stderr}"
@@ -315,15 +481,32 @@ def export_group(
                 ]
                 if verbose:
                     print(f"[VERBOSE] Converting isolated SVG: {' '.join(convert_cmd)}")
-                convert_res = subprocess.run(
-                    convert_cmd, capture_output=True, text=True, check=False
-                )
+
+                try:
+                    convert_res = subprocess.run(
+                        convert_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Conversion of isolated group '{node.id}' ({node.label}) timed out "
+                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
                 if verbose and convert_res.stdout:
                     print(convert_res.stdout)
                 if verbose and convert_res.stderr:
                     print(convert_res.stderr, file=sys.stderr)
 
-                if convert_res.returncode != 0:
+                if (
+                    convert_res.returncode != 0
+                    or "Failed to save" in convert_res.stderr
+                    or "Script Error" in convert_res.stderr
+                ):
                     msg = (
                         f"Failed to export isolated group '{node.id}' ({node.label}) "
                         f"to {output_file}:\n{convert_res.stderr}"
@@ -332,6 +515,9 @@ def export_group(
             finally:
                 if tmp_svg_path.exists():
                     tmp_svg_path.unlink()
+
+        # Post-export file verification and sanity checking
+        verify_exported_file(output_file, verbose=verbose, timeout=timeout)
 
     if verbose or dry_run:
         prefix = "[DRY-RUN] Would export" if dry_run else "Exported"
@@ -345,6 +531,7 @@ def export_full_document(
     fmt: str,
     output_base_dir: Path,
     dpi: float = 229.33,
+    timeout: float = DEFAULT_TIMEOUT,
     dry_run: bool = False,
     verbose: bool = False,
 ) -> Path:
@@ -354,41 +541,172 @@ def export_full_document(
         msg = "Inkscape CLI executable ('inkscape') is required for document export."
         raise RuntimeError(msg)
 
+    magick_path = shutil.which("magick") or shutil.which("convert")
+
     # 1. Format directory: <output_base_dir>/fmt/<format>/
-    fmt_dir = output_base_dir / "fmt" / fmt.lower()
+    fmt_clean = fmt.strip().lstrip(".").lower()
+    fmt_dir = output_base_dir / "fmt" / fmt_clean
 
     # 2. Output file: <output_base_dir>/fmt/<format>/<svg_file.stem>.<format>
-    output_file = fmt_dir / f"{svg_file.stem}.{fmt.lower()}"
+    output_file = fmt_dir / f"{svg_file.stem}.{fmt_clean}"
 
     if not dry_run:
         fmt_dir.mkdir(parents=True, exist_ok=True)
 
-        cmd = [
-            inkscape_path,
-            str(svg_file),
-            f"--export-filename={output_file}",
-        ]
+        if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
+            cmd = [
+                inkscape_path,
+                str(svg_file),
+                f"--export-filename={output_file}",
+            ]
 
-        if fmt.lower() == "svg":
-            cmd.append("--export-plain-svg")
-        elif fmt.lower() == "png":
-            cmd.append(f"--export-dpi={dpi}")
+            if fmt_clean == "svg":
+                cmd.append("--export-plain-svg")
+            elif fmt_clean == "png":
+                cmd.append(f"--export-dpi={dpi}")
 
-        if verbose:
-            print(f"[VERBOSE] Running: {' '.join(cmd)}")
+            if verbose:
+                print(f"[VERBOSE] Running: {' '.join(cmd)}")
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        if verbose and result.stdout:
-            print(result.stdout)
-        if verbose and result.stderr:
-            print(result.stderr, file=sys.stderr)
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired as e:
+                msg = (
+                    f"Export of full document '{svg_file.name}' timed out "
+                    f"after {timeout} seconds: {' '.join(cmd)}"
+                )
+                raise RuntimeError(msg) from e
 
-        if result.returncode != 0:
-            msg = (
-                f"Failed to export full document '{svg_file}' "
-                f"to {output_file}:\n{result.stderr}"
-            )
-            raise RuntimeError(msg)
+            if verbose and result.stdout:
+                print(result.stdout)
+            if verbose and result.stderr:
+                print(result.stderr, file=sys.stderr)
+
+            if result.returncode != 0:
+                msg = (
+                    f"Failed to export full document '{svg_file}' "
+                    f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
+                )
+                raise RuntimeError(msg)
+
+        elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
+            # High-fidelity raster pipeline for full document
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
+                tmp_png_path = Path(tmp_png.name)
+
+            try:
+                render_cmd = [
+                    inkscape_path,
+                    str(svg_file),
+                    f"--export-dpi={dpi}",
+                    f"--export-filename={tmp_png_path}",
+                ]
+                if verbose:
+                    print(
+                        f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}"
+                    )
+
+                try:
+                    render_res = subprocess.run(
+                        render_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Full document PNG render timed out "
+                        f"after {timeout} seconds: {' '.join(render_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if (
+                    render_res.returncode != 0
+                    or not tmp_png_path.exists()
+                    or tmp_png_path.stat().st_size == 0
+                ):
+                    msg = f"Failed to render full document PNG:\n{render_res.stderr}"
+                    raise RuntimeError(msg)
+
+                convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
+                if verbose:
+                    print(
+                        f"[VERBOSE] Converting full document raster image: {' '.join(convert_cmd)}"
+                    )
+
+                try:
+                    conv_res = subprocess.run(
+                        convert_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"ImageMagick full document conversion timed out "
+                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if conv_res.returncode != 0:
+                    msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
+                    raise RuntimeError(msg)
+            finally:
+                if tmp_png_path.exists():
+                    tmp_png_path.unlink()
+
+        else:
+            # Fallback direct invocation for other formats
+            cmd = [
+                inkscape_path,
+                str(svg_file),
+                f"--export-filename={output_file}",
+            ]
+
+            if verbose:
+                print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired as e:
+                msg = (
+                    f"Export of full document '{svg_file.name}' timed out "
+                    f"after {timeout} seconds: {' '.join(cmd)}"
+                )
+                raise RuntimeError(msg) from e
+
+            if verbose and result.stdout:
+                print(result.stdout)
+            if verbose and result.stderr:
+                print(result.stderr, file=sys.stderr)
+
+            if (
+                result.returncode != 0
+                or "Failed to save" in result.stderr
+                or "Script Error" in result.stderr
+            ):
+                msg = (
+                    f"Failed to export full document '{svg_file}' "
+                    f"to {output_file}:\n{result.stderr}"
+                )
+                raise RuntimeError(msg)
+
+        # Post-export file verification and sanity checking
+        verify_exported_file(output_file, verbose=verbose, timeout=timeout)
 
     if verbose or dry_run:
         prefix = (
@@ -476,7 +794,7 @@ Examples:
         "--format",
         type=str,
         default=None,
-        help="Output export format (e.g. 'svg', 'png', 'pdf', 'eps'). Defaults to 'svg' when exporting groups or full document.",
+        help="Output export format (e.g. 'svg', 'png', 'pdf', 'eps', 'jpg', 'webp', 'tiff'). Defaults to 'svg'.",
     )
     parser.add_argument(
         "-o",
@@ -490,6 +808,13 @@ Examples:
         type=float,
         default=229.33,
         help="Rasterization DPI for pixel-based exports (default: 229.33).",
+    )
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT,
+        help=f"Execution timeout in seconds for individual Inkscape export operations (default: {DEFAULT_TIMEOUT}s).",
     )
     parser.add_argument(
         "--dry-run",
@@ -522,7 +847,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Dynamic format listing
     if args.list_formats:
-        supported = get_supported_formats()
+        supported = get_supported_formats(timeout=args.timeout)
         formatted_list = ", ".join(f".{fmt}" for fmt in supported)
         print(f"Supported Inkscape export formats ({len(supported)}):")
         print(f"  {formatted_list}")
@@ -541,7 +866,7 @@ def main(argv: list[str] | None = None) -> int:
     # Validate output format if specified
     if args.format:
         clean_fmt = args.format.strip().lstrip(".").lower()
-        supported = get_supported_formats()
+        supported = get_supported_formats(timeout=args.timeout)
         if clean_fmt not in supported:
             print(
                 f"Error: Unsupported export format '{args.format}'.\n"
@@ -562,6 +887,7 @@ def main(argv: list[str] | None = None) -> int:
                 fmt=fmt,
                 output_base_dir=output_dir,
                 dpi=args.dpi,
+                timeout=args.timeout,
                 dry_run=args.dry_run,
                 verbose=args.verbose,
             )
@@ -617,6 +943,7 @@ def main(argv: list[str] | None = None) -> int:
                 fmt=fmt,
                 output_base_dir=output_dir,
                 dpi=args.dpi,
+                timeout=args.timeout,
                 dry_run=args.dry_run,
                 verbose=args.verbose,
             )

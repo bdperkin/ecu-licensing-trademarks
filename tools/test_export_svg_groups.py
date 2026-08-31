@@ -16,6 +16,7 @@ from tools.export_svg_groups import (
     main,
     normalize_slug,
     parse_svg_groups,
+    verify_exported_file,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -292,6 +293,78 @@ class TestExportSvgGroups(unittest.TestCase):
             expected_file = (
                 out_path / "fmt" / "hpgl" / "brand-pattern-swatches" / "mark-63.hpgl"
             )
+            self.assertTrue(expected_file.exists())
+            self.assertGreater(expected_file.stat().st_size, 0)
+
+    def test_export_timeout_expired(self) -> None:
+        """Test that exceeding the timeout aborts cleanly and reports an error."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 1",
+                        "--format",
+                        "png",
+                        "--output-dir",
+                        str(out_path),
+                        "--timeout",
+                        "0.0001",
+                    ]
+                )
+            self.assertEqual(exit_code, 1)
+            output = stderr.getvalue()
+            self.assertIn("timed out", output)
+
+    def test_verify_exported_file_missing(self) -> None:
+        """Test that verify_exported_file raises when file does not exist."""
+        non_existent = Path("/tmp/definitely_not_a_real_file_12345.png")
+        with self.assertRaises(RuntimeError) as ctx:
+            verify_exported_file(non_existent)
+        self.assertIn("was not created", str(ctx.exception))
+
+    def test_verify_exported_file_empty(self) -> None:
+        """Test that verify_exported_file raises when file is 0 bytes."""
+        with tempfile.NamedTemporaryFile(suffix=".png") as empty_file:
+            empty_path = Path(empty_file.name)
+            with self.assertRaises(RuntimeError) as ctx:
+                verify_exported_file(empty_path)
+            self.assertIn("is empty", str(ctx.exception))
+
+    def test_raster_export_and_verification_jpg(self) -> None:
+        """Test raster conversion and post-export verification for JPG."""
+        if not shutil.which("inkscape") or not (
+            shutil.which("magick") or shutil.which("convert")
+        ):
+            self.skipTest("Inkscape or ImageMagick not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 5",
+                        "--format",
+                        "jpg",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Rendering intermediate PNG:", output)
+            self.assertIn("[VERBOSE] Converting raster image:", output)
+            expected_file = out_path / "fmt" / "jpg" / "primary-mark" / "mark-5.jpg"
             self.assertTrue(expected_file.exists())
             self.assertGreater(expected_file.stat().st_size, 0)
 

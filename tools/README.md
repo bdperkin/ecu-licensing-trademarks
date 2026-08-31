@@ -64,6 +64,7 @@ python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -c f
 - **Format validation**: Validates requested formats against dynamically discovered formats and reports allowed formats if unsupported.
 - **Full document export (`-a`, `--all`, `--full`, `--document`)**: Exports the entire SVG canvas as-is to `<output_dir>/fmt/<format>/<basename>.<format>`.
 - **Verbose logging (`-v`, `--verbose`)**: Enables detailed logging and displays exact subprocess CLI commands and progress.
+- **Configurable timeout (`-t`, `--timeout`)**: Sets the maximum execution timeout in seconds for individual Inkscape export processes (default: `120.0s`).
 - **Hierarchy preservation**: Exports into `<output_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/.../<leaf_name>.<format>` with lowercase hyphenated slugs.
 
 ### CLI Usage Examples
