@@ -24,6 +24,7 @@ DEFAULT_DUPLICATES_LIST_NAMES = [
     "duplicate_wordlist.txt",
 ]
 
+
 def get_default_wordlist_path():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     for name in DEFAULT_WORDLIST_NAMES:
@@ -31,6 +32,7 @@ def get_default_wordlist_path():
         if os.path.isfile(candidate):
             return candidate
     return None
+
 
 def get_default_duplicates_list_path():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -40,18 +42,20 @@ def get_default_duplicates_list_path():
             return candidate
     return None
 
+
 def get_element_path(elem):
     path_parts = []
     curr = elem
     while curr is not None:
         # Use the 'id' attribute if present, otherwise fallback to the tag name
-        identifier = curr.get('id')
+        identifier = curr.get("id")
         if not identifier:
-            tag_name = curr.tag.split('}')[-1] if isinstance(curr.tag, str) else 'node'
+            tag_name = curr.tag.split("}")[-1] if isinstance(curr.tag, str) else "node"
             identifier = f"<{tag_name}>"
         path_parts.insert(0, identifier)
         curr = curr.getparent()
-    return '/'.join(path_parts)
+    return "/".join(path_parts)
+
 
 def load_wordlist(file_path):
     if not file_path:
@@ -59,22 +63,22 @@ def load_wordlist(file_path):
     ignore_words = set()
     raw_word_entries = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
                 if line not in raw_word_entries:
                     raw_word_entries.append(line)
                 # Split line into tokens
-                raw_tokens = re.split(r'[\s_\-]+', line)
+                raw_tokens = re.split(r"[\s_\-]+", line)
                 for token in raw_tokens:
-                    sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                    sub_tokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)", token)
                     if sub_tokens:
                         ignore_words.update(t.lower() for t in sub_tokens if len(t) > 1)
                     elif len(token) > 1 and token.isalpha():
                         ignore_words.add(token.lower())
-                for w in re.findall(r'\b[a-zA-Z]+\b', line.lower()):
+                for w in re.findall(r"\b[a-zA-Z]+\b", line.lower()):
                     if len(w) > 1:
                         ignore_words.add(w)
     except FileNotFoundError:
@@ -85,15 +89,16 @@ def load_wordlist(file_path):
         sys.exit(1)
     return ignore_words, raw_word_entries
 
+
 def load_duplicates_list(file_path):
     if not file_path:
         return []
     ignore_duplicates = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
                 if line not in ignore_duplicates:
                     ignore_duplicates.append(line)
@@ -105,32 +110,114 @@ def load_duplicates_list(file_path):
         sys.exit(1)
     return ignore_duplicates
 
+
 VALID_CHECKS = {
-    'missing': {'missing', 'missing-labels', 'missing_labels', 'missing-label', 'missing_label', '1'},
-    'duplicates': {'duplicate', 'duplicates', 'duplicate-labels', 'duplicate_labels', 'duplicate-label', 'duplicate_label', '2'},
-    'spelling': {'spelling', 'spell', 'spellcheck', 'spell-check', 'spelling-errors', 'spelling_errors', 'typos', '3'},
-    'empty': {'empty', 'empty-groups', 'empty_groups', 'empty-group', 'empty_group', 'zero', 'zero-objects', 'zero_objects', '4'},
-    'single': {'single', 'single-object', 'single_object', 'single-objects', 'single_objects', 'single-child', 'single_child', 'single-child-groups', 'single-item', 'single_item', 'single-group', 'single_group', 'single-object-groups', '5'},
-    'formatting': {'formatting', 'whitespace', 'label-formatting', 'label_formatting', 'spaces', '6'},
-    'marks': {'marks', 'numbered-marks', 'numbered_marks', 'mark-sequence', 'mark_sequence', '7'},
-    'ungrouped': {'ungrouped', 'stranded', 'canvas-root', 'canvas_root', 'top-level', 'top_level', '8'},
+    "missing": {
+        "missing",
+        "missing-labels",
+        "missing_labels",
+        "missing-label",
+        "missing_label",
+        "1",
+    },
+    "duplicates": {
+        "duplicate",
+        "duplicates",
+        "duplicate-labels",
+        "duplicate_labels",
+        "duplicate-label",
+        "duplicate_label",
+        "2",
+    },
+    "spelling": {
+        "spelling",
+        "spell",
+        "spellcheck",
+        "spell-check",
+        "spelling-errors",
+        "spelling_errors",
+        "typos",
+        "3",
+    },
+    "empty": {
+        "empty",
+        "empty-groups",
+        "empty_groups",
+        "empty-group",
+        "empty_group",
+        "zero",
+        "zero-objects",
+        "zero_objects",
+        "4",
+    },
+    "single": {
+        "single",
+        "single-object",
+        "single_object",
+        "single-objects",
+        "single_objects",
+        "single-child",
+        "single_child",
+        "single-child-groups",
+        "single-item",
+        "single_item",
+        "single-group",
+        "single_group",
+        "single-object-groups",
+        "5",
+    },
+    "formatting": {
+        "formatting",
+        "whitespace",
+        "label-formatting",
+        "label_formatting",
+        "spaces",
+        "6",
+    },
+    "marks": {
+        "marks",
+        "numbered-marks",
+        "numbered_marks",
+        "mark-sequence",
+        "mark_sequence",
+        "7",
+    },
+    "ungrouped": {
+        "ungrouped",
+        "stranded",
+        "canvas-root",
+        "canvas_root",
+        "top-level",
+        "top_level",
+        "8",
+    },
 }
-ALL_CHECKS = {'missing', 'duplicates', 'spelling', 'empty', 'single', 'formatting', 'marks', 'ungrouped'}
+ALL_CHECKS = {
+    "missing",
+    "duplicates",
+    "spelling",
+    "empty",
+    "single",
+    "formatting",
+    "marks",
+    "ungrouped",
+}
+
 
 def normalize_checks(checks):
     if checks is None:
         return set(ALL_CHECKS)
     if isinstance(checks, str):
-        checks = [c.strip() for c in checks.replace(',', ' ').split() if c.strip()]
+        checks = [c.strip() for c in checks.replace(",", " ").split() if c.strip()]
     selected = set()
     for raw in checks:
-        if isinstance(raw, str) and ',' in raw:
-            sub_items = [c.strip() for c in raw.split(',') if c.strip()]
+        if isinstance(raw, str) and "," in raw:
+            sub_items = [c.strip() for c in raw.split(",") if c.strip()]
         else:
             sub_items = [raw]
         for item in sub_items:
             key = str(item).lower().strip()
-            if key == 'all':
+            if key == "all":
                 return set(ALL_CHECKS)
             found = False
             for canonical, aliases in VALID_CHECKS.items():
@@ -144,13 +231,22 @@ def normalize_checks(checks):
                 )
     return selected if selected else set(ALL_CHECKS)
 
+
 def is_single_alnum_label(label):
     if not label:
         return False
     s = label.strip()
     return len(s) == 1 and s.isalnum()
 
-def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None, checks=None, show_stats=False, strict_duplicates=False):
+
+def audit_inkscape_svg(
+    file_path,
+    wordlist_path=None,
+    duplicates_list_path=None,
+    checks=None,
+    show_stats=False,
+    strict_duplicates=False,
+):
     try:
         active_checks = normalize_checks(checks)
     except ValueError as e:
@@ -163,9 +259,15 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     if strict_duplicates:
         ignore_duplicate_names = []
     else:
-        if duplicates_list_path is None and ("duplicates" in active_checks or show_stats):
+        if duplicates_list_path is None and (
+            "duplicates" in active_checks or show_stats
+        ):
             duplicates_list_path = get_default_duplicates_list_path()
-        ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if ("duplicates" in active_checks or show_stats) else []
+        ignore_duplicate_names = (
+            load_duplicates_list(duplicates_list_path)
+            if ("duplicates" in active_checks or show_stats)
+            else []
+        )
 
     parser = etree.XMLParser(recover=True)
     tree = etree.parse(file_path, parser)
@@ -173,7 +275,7 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
 
     # Find all group elements outside <defs> regardless of namespace prefix using local-name()
     groups = root.xpath('//*[local-name()="g"][not(ancestor::*[local-name()="defs"])]')
-    
+
     missing_paths = []
     labels = []
     label_paths = {}
@@ -181,10 +283,10 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     single_object_groups = []
     formatting_issues = []
     marks_dict = {}
-    mark_pattern = re.compile(r'^Mark\s+(\d+)$')
+    mark_pattern = re.compile(r"^Mark\s+(\d+)$")
 
     for g in groups:
-        label_val = g.get('{http://www.inkscape.org/namespaces/inkscape}label')
+        label_val = g.get("{http://www.inkscape.org/namespaces/inkscape}label")
         g_path = get_element_path(g)
         children = [c for c in g if isinstance(c.tag, str)]
 
@@ -200,10 +302,10 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
                 issues = []
                 if label_val != label_val.strip():
                     issues.append("leading/trailing whitespace")
-                if re.search(r'\s{2,}', label_val):
+                if re.search(r"\s{2,}", label_val):
                     issues.append("consecutive spaces")
                 if issues:
-                    formatting_issues.append((g_path, label_val, ', '.join(issues)))
+                    formatting_issues.append((g_path, label_val, ", ".join(issues)))
 
             if "marks" in active_checks or show_stats:
                 m = mark_pattern.match(label_val)
@@ -216,15 +318,19 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         elif len(children) == 1:
             if not is_single_alnum_label(label_val):
                 child = children[0]
-                child_tag = child.tag.split('}')[-1] if isinstance(child.tag, str) else 'node'
-                child_id = child.get('id')
-                child_label = child.get('{http://www.inkscape.org/namespaces/inkscape}label')
+                child_tag = (
+                    child.tag.split("}")[-1] if isinstance(child.tag, str) else "node"
+                )
+                child_id = child.get("id")
+                child_label = child.get(
+                    "{http://www.inkscape.org/namespaces/inkscape}label"
+                )
                 child_desc_parts = [f"<{child_tag}"]
                 if child_id:
                     child_desc_parts.append(f"id='{child_id}'")
                 if child_label:
                     child_desc_parts.append(f"label='{child_label}'")
-                child_desc = ' '.join(child_desc_parts) + '>'
+                child_desc = " ".join(child_desc_parts) + ">"
                 single_object_groups.append((g_path, label_val, child_desc))
 
     has_errors = False
@@ -240,10 +346,20 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             print("  - No groups missing labels found.\n")
 
     ignore_duplicate_set = set(ignore_duplicate_names)
-    all_duplicate_labels = {lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1}
-    reported_duplicate_labels = {lbl: paths for lbl, paths in all_duplicate_labels.items() if lbl not in ignore_duplicate_set}
-    reported_duplicate_groups_count = sum(len(paths) for paths in reported_duplicate_labels.values())
-    unused_duplicate_names = [lbl for lbl in ignore_duplicate_names if lbl not in label_paths]
+    all_duplicate_labels = {
+        lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1
+    }
+    reported_duplicate_labels = {
+        lbl: paths
+        for lbl, paths in all_duplicate_labels.items()
+        if lbl not in ignore_duplicate_set
+    }
+    reported_duplicate_groups_count = sum(
+        len(paths) for paths in reported_duplicate_labels.values()
+    )
+    unused_duplicate_names = [
+        lbl for lbl in ignore_duplicate_names if lbl not in label_paths
+    ]
 
     if "duplicates" in active_checks:
         header = "=== 2. Duplicate Group Labels ==="
@@ -253,7 +369,9 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         if reported_duplicate_labels:
             has_errors = True
             for label, paths in reported_duplicate_labels.items():
-                print(f"  - Label '{label}' ({len(paths)} occurrences) is duplicated across paths:")
+                print(
+                    f"  - Label '{label}' ({len(paths)} occurrences) is duplicated across paths:"
+                )
                 for path in paths:
                     print(f"    * {path}")
         else:
@@ -261,7 +379,9 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
 
         if unused_duplicate_names and not strict_duplicates:
             has_errors = True
-            print(f"  - Unused ignore duplicates ({len(unused_duplicate_names)} entries not found in SVG - flagged for removal):")
+            print(
+                f"  - Unused ignore duplicates ({len(unused_duplicate_names)} entries not found in SVG - flagged for removal):"
+            )
             for lbl in unused_duplicate_names:
                 print(f"    * '{lbl}'")
         print()
@@ -276,20 +396,25 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         ignore_words, raw_word_entries = load_wordlist(wordlist_path)
         all_svg_tokens = set()
         for label, g_path in labels:
-            raw_tokens = re.split(r'[\s_\-]+', label)
+            raw_tokens = re.split(r"[\s_\-]+", label)
             for token in raw_tokens:
-                sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                sub_tokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)", token)
                 if sub_tokens:
                     all_svg_tokens.update(t.lower() for t in sub_tokens if len(t) > 1)
                 elif len(token) > 1 and token.isalpha():
                     all_svg_tokens.add(token.lower())
-            for w in re.findall(r'\b[a-zA-Z]+\b', label.lower()):
+            for w in re.findall(r"\b[a-zA-Z]+\b", label.lower()):
                 if len(w) > 1:
                     all_svg_tokens.add(w)
 
         for w_entry in raw_word_entries:
-            tokens = [t.lower() for t in re.findall(r'[A-Za-z]+', w_entry) if len(t) > 1]
-            if not any(t in all_svg_tokens for t in tokens) and w_entry.lower() not in all_svg_tokens:
+            tokens = [
+                t.lower() for t in re.findall(r"[A-Za-z]+", w_entry) if len(t) > 1
+            ]
+            if (
+                not any(t in all_svg_tokens for t in tokens)
+                and w_entry.lower() not in all_svg_tokens
+            ):
                 unused_ignore_words.append(w_entry)
 
     if "spelling" in active_checks:
@@ -301,10 +426,10 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         spelling_issues = False
         for label, g_path in labels:
             # Tokenize by whitespace, underscores, hyphens, and handle camelCase
-            raw_tokens = re.split(r'[\s_\-]+', label)
+            raw_tokens = re.split(r"[\s_\-]+", label)
             tokens = []
             for token in raw_tokens:
-                sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                sub_tokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)", token)
                 if sub_tokens:
                     tokens.extend([t.lower() for t in sub_tokens if len(t) > 1])
                 elif len(token) > 1 and token.isalpha():
@@ -316,14 +441,18 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
                 has_errors = True
                 spelling_error_labels_count += 1
                 unique_typos.update(misspelled)
-                print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
+                print(
+                    f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}"
+                )
 
         if not spelling_issues:
             print("  - No spelling issues detected in labels.")
 
         if unused_ignore_words:
             has_errors = True
-            print(f"  - Unused ignore words ({len(unused_ignore_words)} entries not found in SVG - flagged for removal):")
+            print(
+                f"  - Unused ignore words ({len(unused_ignore_words)} entries not found in SVG - flagged for removal):"
+            )
             for w_entry in unused_ignore_words:
                 print(f"    * '{w_entry}'")
         print()
@@ -371,12 +500,20 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             max_mark = max(marks_dict.keys())
             for i in range(min_mark, max_mark + 1):
                 if i not in marks_dict:
-                    marks_issues.append(f"Missing Mark {i} in sequence Mark {min_mark}..Mark {max_mark}")
+                    marks_issues.append(
+                        f"Missing Mark {i} in sequence Mark {min_mark}..Mark {max_mark}"
+                    )
             for num, g in sorted(marks_dict.items()):
                 num_str = str(num)
-                children_labels = [c.get('{http://www.inkscape.org/namespaces/inkscape}label') for c in g if isinstance(c.tag, str)]
+                children_labels = [
+                    c.get("{http://www.inkscape.org/namespaces/inkscape}label")
+                    for c in g
+                    if isinstance(c.tag, str)
+                ]
                 if num_str not in children_labels:
-                    marks_issues.append(f"Mark {num} is missing child indicator group labeled '{num_str}'")
+                    marks_issues.append(
+                        f"Mark {num} is missing child indicator group labeled '{num_str}'"
+                    )
 
     if "marks" in active_checks:
         print("=== 7. Numbered Marks Structure & Sequence ===")
@@ -389,18 +526,31 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             if marks_dict:
                 min_mark = min(marks_dict.keys())
                 max_mark = max(marks_dict.keys())
-                print(f"  - All {len(marks_dict)} numbered marks (Mark {min_mark} to Mark {max_mark}) verified with valid sequence and number indicators.\n")
+                print(
+                    f"  - All {len(marks_dict)} numbered marks (Mark {min_mark} to Mark {max_mark}) verified with valid sequence and number indicators.\n"
+                )
             else:
                 print("  - No numbered marks found.\n")
 
     stranded_elements = []
     if "ungrouped" in active_checks or show_stats:
         top_canvas = root.xpath('/*/*[not(local-name()="defs")]')
-        drawable_tags = {'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'image', 'use'}
+        drawable_tags = {
+            "path",
+            "rect",
+            "circle",
+            "ellipse",
+            "line",
+            "polyline",
+            "polygon",
+            "text",
+            "image",
+            "use",
+        }
         for el in top_canvas:
-            tag = el.tag.split('}')[-1] if isinstance(el.tag, str) else 'node'
+            tag = el.tag.split("}")[-1] if isinstance(el.tag, str) else "node"
             if tag in drawable_tags:
-                stranded_elements.append((tag, el.get('id', '')))
+                stranded_elements.append((tag, el.get("id", "")))
 
     if "ungrouped" in active_checks:
         print("=== 8. Ungrouped / Stranded Canvas Root Elements ===")
@@ -421,14 +571,22 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             print(f"  - Groups missing labels: {len(missing_paths)}")
         if "duplicates" in active_checks:
             print(f"  - Unique label names: {len(label_paths)}")
-            print(f"  - Duplicate label names: {len(reported_duplicate_labels)} (spanning {reported_duplicate_groups_count} groups)")
+            print(
+                f"  - Duplicate label names: {len(reported_duplicate_labels)} (spanning {reported_duplicate_groups_count} groups)"
+            )
             if strict_duplicates:
-                print(f"  - Duplicate ignore list: Disabled (strict mode)")
+                print("  - Duplicate ignore list: Disabled (strict mode)")
             elif ignore_duplicate_names:
-                print(f"  - Ignored duplicate names loaded: {len(ignore_duplicate_names)}")
-                print(f"  - Unused ignored duplicate names: {len(unused_duplicate_names)}")
+                print(
+                    f"  - Ignored duplicate names loaded: {len(ignore_duplicate_names)}"
+                )
+                print(
+                    f"  - Unused ignored duplicate names: {len(unused_duplicate_names)}"
+                )
         if "spelling" in active_checks:
-            print(f"  - Labels with potential typos: {spelling_error_labels_count} ({len(unique_typos)} unique typo words)")
+            print(
+                f"  - Labels with potential typos: {spelling_error_labels_count} ({len(unique_typos)} unique typo words)"
+            )
             if raw_word_entries:
                 print(f"  - Ignored words loaded: {len(raw_word_entries)}")
                 print(f"  - Unused ignored words: {len(unused_ignore_words)}")
@@ -439,36 +597,55 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         if "formatting" in active_checks:
             print(f"  - Label formatting issues: {len(formatting_issues)}")
         if "marks" in active_checks:
-            print(f"  - Numbered marks verified: {len(marks_dict)} (issues: {len(marks_issues)})")
+            print(
+                f"  - Numbered marks verified: {len(marks_dict)} (issues: {len(marks_issues)})"
+            )
         if "ungrouped" in active_checks:
             print(f"  - Stranded canvas root elements: {len(stranded_elements)}")
 
     return not has_errors
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Audit Inkscape SVG files for missing labels, duplicate labels, spelling errors, empty groups, single-object groups, formatting defects, mark sequences, and ungrouped elements.")
+    parser = argparse.ArgumentParser(
+        description="Audit Inkscape SVG files for missing labels, duplicate labels, spelling errors, empty groups, single-object groups, formatting defects, mark sequences, and ungrouped elements."
+    )
     parser.add_argument("svg_path", help="Path to the SVG file to audit")
     parser.add_argument("pos_wordlist", nargs="?", default=None, help=argparse.SUPPRESS)
     parser.add_argument(
-        "-w", "--wordlist", "-i", "--ignore-words", "--ignore-file", "--ignore",
+        "-w",
+        "--wordlist",
+        "-i",
+        "--ignore-words",
+        "--ignore-file",
+        "--ignore",
         dest="wordlist_path",
         default=None,
         help="Path to a word list file containing strings/words to ignore during spell checking",
     )
     parser.add_argument(
-        "-d", "--duplicates-list", "--ignore-duplicates", "--ignore-duplicate-labels", "--duplicates-file",
+        "-d",
+        "--duplicates-list",
+        "--ignore-duplicates",
+        "--ignore-duplicate-labels",
+        "--duplicates-file",
         dest="duplicates_list_path",
         default=None,
         help="Path to a file containing duplicate label names to ignore",
     )
     parser.add_argument(
-        "--strict-duplicates", "--strict", "--strict-dups", "--no-ignore-duplicates",
+        "--strict-duplicates",
+        "--strict",
+        "--strict-dups",
+        "--no-ignore-duplicates",
         dest="strict_duplicates",
         action="store_true",
         help="Run duplicate checks in strict mode (do not ignore any duplicate labels)",
     )
     parser.add_argument(
-        "-c", "--checks", "--check",
+        "-c",
+        "--checks",
+        "--check",
         dest="checks",
         nargs="+",
         default=None,
@@ -476,55 +653,79 @@ def main():
         help="Checks to run: 'missing' (1), 'duplicates' (2), 'spelling' (3), 'empty' (4), 'single' (5), 'formatting' (6), 'marks' (7), 'ungrouped' (8), 'all' (default: all)",
     )
     parser.add_argument(
-        "--missing", "--check-missing",
+        "--missing",
+        "--check-missing",
         dest="check_missing",
         action="store_true",
         help="Run check for groups missing labels",
     )
     parser.add_argument(
-        "--duplicates", "--duplicate", "--check-duplicates",
+        "--duplicates",
+        "--duplicate",
+        "--check-duplicates",
         dest="check_duplicates",
         action="store_true",
         help="Run check for duplicate group labels",
     )
     parser.add_argument(
-        "--spelling", "--spell", "--check-spelling",
+        "--spelling",
+        "--spell",
+        "--check-spelling",
         dest="check_spelling",
         action="store_true",
         help="Run check for potential spelling errors in labels",
     )
     parser.add_argument(
-        "--empty", "--check-empty", "--empty-groups", "--check-empty-groups",
+        "--empty",
+        "--check-empty",
+        "--empty-groups",
+        "--check-empty-groups",
         dest="check_empty",
         action="store_true",
         help="Run check for empty groups (0 objects)",
     )
     parser.add_argument(
-        "--single", "--check-single", "--single-object", "--check-single-object", "--single-child", "--check-single-child",
+        "--single",
+        "--check-single",
+        "--single-object",
+        "--check-single-object",
+        "--single-child",
+        "--check-single-child",
         dest="check_single",
         action="store_true",
         help="Run check for single-object groups (1 object)",
     )
     parser.add_argument(
-        "--formatting", "--whitespace", "--check-formatting", "--check-whitespace",
+        "--formatting",
+        "--whitespace",
+        "--check-formatting",
+        "--check-whitespace",
         dest="check_formatting",
         action="store_true",
         help="Run check for label formatting defects (whitespace / multiple spaces)",
     )
     parser.add_argument(
-        "--marks", "--numbered-marks", "--check-marks",
+        "--marks",
+        "--numbered-marks",
+        "--check-marks",
         dest="check_marks",
         action="store_true",
         help="Run check for numbered marks sequence and child indicator groups",
     )
     parser.add_argument(
-        "--ungrouped", "--stranded", "--check-ungrouped", "--check-stranded",
+        "--ungrouped",
+        "--stranded",
+        "--check-ungrouped",
+        "--check-stranded",
         dest="check_ungrouped",
         action="store_true",
         help="Run check for ungrouped / stranded drawable elements at canvas root",
     )
     parser.add_argument(
-        "-s", "--stats", "--statistics", "--summary",
+        "-s",
+        "--stats",
+        "--statistics",
+        "--summary",
         dest="show_stats",
         action="store_true",
         help="Report summary statistics at the end of the run",
@@ -563,5 +764,6 @@ def main():
     )
     sys.exit(0 if success else 1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

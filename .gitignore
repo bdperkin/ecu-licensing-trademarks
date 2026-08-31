@@ -1,3 +1,6 @@
 __pycache__/
 *.swp
 .*.swp
+.venv/
+.ruff_cache/
+.pytest_cache/

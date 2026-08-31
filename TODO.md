@@ -113,6 +113,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Prefix font character glyphs in Marks 60–62 with font and mark names (`[N] Matrix [A-Z]`, `[N] Gotham [A-Z]`) and Mark 59 letters
   - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Expand `tools/audit_svg.py` to 8 automated checks (adding label formatting, numbered marks sequence/indicator validation, and canvas-root stranded element checks)
+  - [x] Configure `.pre-commit-config.yaml` and GitHub Actions CI workflow (`.github/workflows/ci.yml`) to automatically audit the SVG on commits and pull requests
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
@@ -120,5 +121,4 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 ### 2. Remaining / Optimization Opportunities
 
-- [ ] **Continuous Integration & Pre-commit Hooks**
-  - [ ] Configure `.pre-commit-config.yaml` or CI workflow to automatically run `python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -s` on commits and pull requests
+*All identified tasks, structural reviews, optimizations, and CI integrations have been completed.*
