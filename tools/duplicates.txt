@@ -105,7 +105,6 @@ Black Outline
 Black Outline Marker
 C
 Carolina
-Curr
 D
 E
 East
@@ -113,8 +112,6 @@ East Carolina
 ECU
 ECU (East Carolina University)
 ed
-ent R
-evision Date: 05/08/23
 F
 G
 Gold Outline
