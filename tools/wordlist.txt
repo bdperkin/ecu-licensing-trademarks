@@ -29,4 +29,3 @@ palett
 PANTONE
 SPC
 subjec
-tes
