@@ -47,10 +47,12 @@ Comprehensive repository containing normalized vector SVG assets, reference publ
 ├── .github/
 │   ├── dependabot.yml                       # Automated weekly dependency & workflow updates
 │   └── workflows/
-│       └── ci.yml                           # GitHub Actions CI workflow (linting, audit, tests)
+│       ├── ci.yml                           # CI workflow (linting, audit, unit tests, pip-audit)
+│       └── codeql.yml                       # CodeQL automated code scanning workflow
 ├── .pre-commit-config.yaml                  # 13 pre-commit hooks for all repository file types
 ├── requirements.txt                         # Runtime Python dependencies (lxml, pyspellchecker)
 ├── requirements-dev.txt                     # Developer & CI dependencies (pre-commit, ruff, pip-audit)
+├── SECURITY.md                              # Security policy & private vulnerability reporting
 ├── TODO.md                                  # Review checklist, section architecture, & status tracker
 └── README.md                                # Top-level documentation & trademark guidelines
 ```
