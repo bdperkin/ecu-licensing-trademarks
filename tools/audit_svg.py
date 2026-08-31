@@ -147,7 +147,7 @@ def is_single_alnum_label(label):
     s = label.strip()
     return len(s) == 1 and s.isalnum()
 
-def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None, checks=None, show_stats=False):
+def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None, checks=None, show_stats=False, strict_duplicates=False):
     try:
         active_checks = normalize_checks(checks)
     except ValueError as e:
@@ -157,8 +157,12 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     if wordlist_path is None and ("spelling" in active_checks or show_stats):
         wordlist_path = get_default_wordlist_path()
 
-    if duplicates_list_path is None and ("duplicates" in active_checks or show_stats):
-        duplicates_list_path = get_default_duplicates_list_path()
+    if strict_duplicates:
+        ignore_duplicate_names = []
+    else:
+        if duplicates_list_path is None and ("duplicates" in active_checks or show_stats):
+            duplicates_list_path = get_default_duplicates_list_path()
+        ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if ("duplicates" in active_checks or show_stats) else []
 
     parser = etree.XMLParser(recover=True)
     tree = etree.parse(file_path, parser)
@@ -212,7 +216,6 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         else:
             print("  - No groups missing labels found.\n")
 
-    ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if "duplicates" in active_checks or show_stats else []
     ignore_duplicate_set = set(ignore_duplicate_names)
     all_duplicate_labels = {lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1}
     reported_duplicate_labels = {lbl: paths for lbl, paths in all_duplicate_labels.items() if lbl not in ignore_duplicate_set}
@@ -220,7 +223,10 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
     unused_duplicate_names = [lbl for lbl in ignore_duplicate_names if lbl not in label_paths]
 
     if "duplicates" in active_checks:
-        print("=== 2. Duplicate Group Labels ===")
+        header = "=== 2. Duplicate Group Labels ==="
+        if strict_duplicates:
+            header = "=== 2. Duplicate Group Labels (Strict Mode) ==="
+        print(header)
         if reported_duplicate_labels:
             for label, paths in reported_duplicate_labels.items():
                 print(f"  - Label '{label}' ({len(paths)} occurrences) is duplicated across paths:")
@@ -229,7 +235,7 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         else:
             print("  - No duplicate labels found.")
 
-        if unused_duplicate_names:
+        if unused_duplicate_names and not strict_duplicates:
             print(f"  - Unused ignore duplicates ({len(unused_duplicate_names)} entries not found in SVG - flagged for removal):")
             for lbl in unused_duplicate_names:
                 print(f"    * '{lbl}'")
@@ -328,7 +334,9 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         if "duplicates" in active_checks:
             print(f"  - Unique label names: {len(label_paths)}")
             print(f"  - Duplicate label names: {len(reported_duplicate_labels)} (spanning {reported_duplicate_groups_count} groups)")
-            if ignore_duplicate_names:
+            if strict_duplicates:
+                print(f"  - Duplicate ignore list: Disabled (strict mode)")
+            elif ignore_duplicate_names:
                 print(f"  - Ignored duplicate names loaded: {len(ignore_duplicate_names)}")
                 print(f"  - Unused ignored duplicate names: {len(unused_duplicate_names)}")
         if "spelling" in active_checks:
@@ -356,6 +364,12 @@ def main():
         dest="duplicates_list_path",
         default=None,
         help="Path to a file containing duplicate label names to ignore",
+    )
+    parser.add_argument(
+        "--strict-duplicates", "--strict", "--strict-dups", "--no-ignore-duplicates",
+        dest="strict_duplicates",
+        action="store_true",
+        help="Run duplicate checks in strict mode (do not ignore any duplicate labels)",
     )
     parser.add_argument(
         "-c", "--checks", "--check",
@@ -425,6 +439,7 @@ def main():
         duplicates_list_path=args.duplicates_list_path,
         checks=checks,
         show_stats=args.show_stats,
+        strict_duplicates=args.strict_duplicates,
     )
 
 if __name__ == '__main__':
