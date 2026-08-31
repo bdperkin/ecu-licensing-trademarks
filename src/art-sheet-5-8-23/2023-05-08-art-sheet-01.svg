@@ -22,14 +22,14 @@
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="2.6181437"
-     inkscape:cx="1037.5672"
-     inkscape:cy="517.35128"
+     inkscape:cx="347.76548"
+     inkscape:cy="654.85328"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g9531" />
+     inkscape:current-layer="g9524" />
   <defs
      id="defs502">
     <pattern
@@ -39233,7 +39233,8 @@
            id="g9498"
            inkscape:label="East">
           <g
-             id="g8833">
+             id="g8833"
+             inkscape:label="26 S">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39248,7 +39249,8 @@
                id="path5988" />
           </g>
           <g
-             id="g8834">
+             id="g8834"
+             inkscape:label="26 T">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39263,7 +39265,8 @@
                id="path5990" />
           </g>
           <g
-             id="g8841">
+             id="g8841"
+             inkscape:label="26 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39278,7 +39281,8 @@
                id="path6004" />
           </g>
           <g
-             id="g8842">
+             id="g8842"
+             inkscape:label="26 E">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39297,7 +39301,8 @@
            id="g9497"
            inkscape:label="Carolina">
           <g
-             id="g8835">
+             id="g8835"
+             inkscape:label="26 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39312,7 +39317,8 @@
                id="path5992" />
           </g>
           <g
-             id="g8836">
+             id="g8836"
+             inkscape:label="26 L">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39327,7 +39333,8 @@
                id="path5994" />
           </g>
           <g
-             id="g8837">
+             id="g8837"
+             inkscape:label="26 O">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39342,7 +39349,8 @@
                id="path5996" />
           </g>
           <g
-             id="g8838">
+             id="g8838"
+             inkscape:label="26 I">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39357,7 +39365,8 @@
                id="path5998" />
           </g>
           <g
-             id="g8839">
+             id="g8839"
+             inkscape:label="26 N">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39372,7 +39381,8 @@
                id="path6000" />
           </g>
           <g
-             id="g8840">
+             id="g8840"
+             inkscape:label="26 R">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39387,7 +39397,8 @@
                id="path6002" />
           </g>
           <g
-             id="g8843">
+             id="g8843"
+             inkscape:label="26 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39402,7 +39413,8 @@
                id="path6008" />
           </g>
           <g
-             id="g8844">
+             id="g8844"
+             inkscape:label="26 C">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39468,7 +39480,8 @@
            id="g9502"
            inkscape:label="East">
           <g
-             id="g9163">
+             id="g9163"
+             inkscape:label="25 S">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39483,7 +39496,8 @@
                id="path6840" />
           </g>
           <g
-             id="g9164">
+             id="g9164"
+             inkscape:label="25 T">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39498,7 +39512,8 @@
                id="path6842" />
           </g>
           <g
-             id="g9171">
+             id="g9171"
+             inkscape:label="25 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39513,7 +39528,8 @@
                id="path6856" />
           </g>
           <g
-             id="g9172">
+             id="g9172"
+             inkscape:label="25 E">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39532,7 +39548,8 @@
            id="g9501"
            inkscape:label="Carolina">
           <g
-             id="g9165">
+             id="g9165"
+             inkscape:label="25 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39547,7 +39564,8 @@
                id="path6844" />
           </g>
           <g
-             id="g9166">
+             id="g9166"
+             inkscape:label="25 L">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39562,7 +39580,8 @@
                id="path6846" />
           </g>
           <g
-             id="g9167">
+             id="g9167"
+             inkscape:label="25 O">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39577,7 +39596,8 @@
                id="path6848" />
           </g>
           <g
-             id="g9168">
+             id="g9168"
+             inkscape:label="25 I">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39592,7 +39612,8 @@
                id="path6850" />
           </g>
           <g
-             id="g9169">
+             id="g9169"
+             inkscape:label="25 N">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39607,7 +39628,8 @@
                id="path6852" />
           </g>
           <g
-             id="g9170">
+             id="g9170"
+             inkscape:label="25 R">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39622,7 +39644,8 @@
                id="path6854" />
           </g>
           <g
-             id="g9173">
+             id="g9173"
+             inkscape:label="25 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39637,7 +39660,8 @@
                id="path6860" />
           </g>
           <g
-             id="g9174">
+             id="g9174"
+             inkscape:label="25 C">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39703,7 +39727,8 @@
            id="g9506"
            inkscape:label="East">
           <g
-             id="g8820">
+             id="g8820"
+             inkscape:label="24 S">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39718,7 +39743,8 @@
                id="path5963" />
           </g>
           <g
-             id="g8821">
+             id="g8821"
+             inkscape:label="24 T">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39733,7 +39759,8 @@
                id="path5965" />
           </g>
           <g
-             id="g8828">
+             id="g8828"
+             inkscape:label="24 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39748,7 +39775,8 @@
                id="path5979" />
           </g>
           <g
-             id="g8829">
+             id="g8829"
+             inkscape:label="24 E">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39767,7 +39795,8 @@
            id="g9505"
            inkscape:label="Carolina">
           <g
-             id="g8822">
+             id="g8822"
+             inkscape:label="24 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39782,7 +39811,8 @@
                id="path5967" />
           </g>
           <g
-             id="g8823">
+             id="g8823"
+             inkscape:label="24 L">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39797,7 +39827,8 @@
                id="path5969" />
           </g>
           <g
-             id="g8824">
+             id="g8824"
+             inkscape:label="24 O">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39812,7 +39843,8 @@
                id="path5971" />
           </g>
           <g
-             id="g8825">
+             id="g8825"
+             inkscape:label="24 I">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39827,7 +39859,8 @@
                id="path5973" />
           </g>
           <g
-             id="g8826">
+             id="g8826"
+             inkscape:label="24 N">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39842,7 +39875,8 @@
                id="path5975" />
           </g>
           <g
-             id="g8827">
+             id="g8827"
+             inkscape:label="24 R">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39857,7 +39891,8 @@
                id="path5977" />
           </g>
           <g
-             id="g8830">
+             id="g8830"
+             inkscape:label="24 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39872,7 +39907,8 @@
                id="path5983" />
           </g>
           <g
-             id="g8831">
+             id="g8831"
+             inkscape:label="24 C">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -39938,7 +39974,8 @@
            id="g9510"
            inkscape:label="East">
           <g
-             id="g8803">
+             id="g8803"
+             inkscape:label="23 S">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39953,7 +39990,8 @@
                id="path5938" />
           </g>
           <g
-             id="g8804">
+             id="g8804"
+             inkscape:label="23 T">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39968,7 +40006,8 @@
                id="path5940" />
           </g>
           <g
-             id="g8811">
+             id="g8811"
+             inkscape:label="23 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -39983,7 +40022,8 @@
                id="path5954" />
           </g>
           <g
-             id="g8812">
+             id="g8812"
+             inkscape:label="23 E">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40002,7 +40042,8 @@
            id="g9509"
            inkscape:label="Carolina">
           <g
-             id="g8805">
+             id="g8805"
+             inkscape:label="23 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40017,7 +40058,8 @@
                id="path5942" />
           </g>
           <g
-             id="g8806">
+             id="g8806"
+             inkscape:label="23 L">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40032,7 +40074,8 @@
                id="path5944" />
           </g>
           <g
-             id="g8807">
+             id="g8807"
+             inkscape:label="23 O">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40047,7 +40090,8 @@
                id="path5946" />
           </g>
           <g
-             id="g8808">
+             id="g8808"
+             inkscape:label="23 I">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40062,7 +40106,8 @@
                id="path5948" />
           </g>
           <g
-             id="g8809">
+             id="g8809"
+             inkscape:label="23 N">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40077,7 +40122,8 @@
                id="path5950" />
           </g>
           <g
-             id="g8810">
+             id="g8810"
+             inkscape:label="23 R">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40092,7 +40138,8 @@
                id="path5952" />
           </g>
           <g
-             id="g8817">
+             id="g8817"
+             inkscape:label="23 A">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40107,7 +40154,8 @@
                id="path5958" />
           </g>
           <g
-             id="g8818">
+             id="g8818"
+             inkscape:label="23 C">
             <path
                fill-rule="nonzero"
                fill="#ffc211"
@@ -40173,7 +40221,8 @@
            id="g9514"
            inkscape:label="East">
           <g
-             id="g8790">
+             id="g8790"
+             inkscape:label="22 S">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40188,7 +40237,8 @@
                id="path5913" />
           </g>
           <g
-             id="g8791">
+             id="g8791"
+             inkscape:label="22 T">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40203,7 +40253,8 @@
                id="path5915" />
           </g>
           <g
-             id="g8798">
+             id="g8798"
+             inkscape:label="22 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40218,7 +40269,8 @@
                id="path5929" />
           </g>
           <g
-             id="g8799">
+             id="g8799"
+             inkscape:label="22 E">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40237,7 +40289,8 @@
            id="g9513"
            inkscape:label="Carolina">
           <g
-             id="g8792">
+             id="g8792"
+             inkscape:label="22 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40252,7 +40305,8 @@
                id="path5917" />
           </g>
           <g
-             id="g8793">
+             id="g8793"
+             inkscape:label="22 L">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40267,7 +40321,8 @@
                id="path5919" />
           </g>
           <g
-             id="g8794">
+             id="g8794"
+             inkscape:label="22 O">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40282,7 +40337,8 @@
                id="path5921" />
           </g>
           <g
-             id="g8795">
+             id="g8795"
+             inkscape:label="22 I">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40297,7 +40353,8 @@
                id="path5923" />
           </g>
           <g
-             id="g8796">
+             id="g8796"
+             inkscape:label="22 N">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40312,7 +40369,8 @@
                id="path5925" />
           </g>
           <g
-             id="g8797">
+             id="g8797"
+             inkscape:label="22 R">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40327,7 +40385,8 @@
                id="path5927" />
           </g>
           <g
-             id="g8800">
+             id="g8800"
+             inkscape:label="22 A">
             <path
                fill-rule="nonzero"
                fill="#592d82"
@@ -40342,7 +40401,8 @@
                id="path5933" />
           </g>
           <g
-             id="g8801">
+             id="g8801"
+             inkscape:label="22 C">
             <path
                fill-rule="nonzero"
                fill="#592d82"
