@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import gzip
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import NamedTuple
 
@@ -22,6 +25,8 @@ from lxml import etree
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
 DEFAULT_TIMEOUT = 120.0
+
+ARCHIVE_FORMATS = {"tar", "zip", "svgz"}
 
 RASTER_CONVERT_FORMATS = {
     "jpg",
@@ -251,7 +256,37 @@ def verify_exported_file(
         msg = f"Export failed: Destination file '{output_file}' was created but is empty (0 bytes)."
         raise RuntimeError(msg)
 
-    # Bonus: Sanity check file integrity via ImageMagick if available
+    # Archive validation
+    suffix = output_file.suffix.lower()
+    if suffix == ".tar":
+        if not tarfile.is_tarfile(output_file):
+            msg = f"Exported file '{output_file}' is not a valid tar archive."
+            raise RuntimeError(msg)
+        if verbose:
+            print(f"[VERBOSE] Verified valid tar archive: {output_file}")
+        return
+    if suffix == ".zip":
+        if not zipfile.is_zipfile(output_file):
+            msg = f"Exported file '{output_file}' is not a valid zip archive."
+            raise RuntimeError(msg)
+        if verbose:
+            print(f"[VERBOSE] Verified valid zip archive: {output_file}")
+        return
+    if suffix == ".svgz":
+        try:
+            with gzip.open(output_file, "rb") as f:
+                header = f.read(10)
+                if not header:
+                    msg = f"Exported svgz file '{output_file}' is empty."
+                    raise RuntimeError(msg)
+            if verbose:
+                print(f"[VERBOSE] Verified valid svgz archive: {output_file}")
+            return
+        except Exception as e:
+            msg = f"Exported file '{output_file}' is not a valid svgz archive: {e}"
+            raise RuntimeError(msg) from e
+
+    # Image validation via ImageMagick
     magick_path = shutil.which("magick") or shutil.which("identify")
     if magick_path:
         cmd = (
@@ -429,8 +464,68 @@ def export_group(
                 if tmp_png_path.exists():
                     tmp_png_path.unlink()
 
+        elif fmt_clean in ARCHIVE_FORMATS:
+            # Package isolated SVG into archive
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                tmp_svg_path = Path(tmp_svg.name)
+
+            try:
+                extract_cmd = [
+                    inkscape_path,
+                    str(svg_file),
+                    f"--export-id={node.id}",
+                    "--export-id-only",
+                    "--export-plain-svg",
+                    f"--export-filename={tmp_svg_path}",
+                ]
+                if verbose:
+                    print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
+
+                try:
+                    extract_res = subprocess.run(
+                        extract_cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Isolation of group '{node.id}' ({node.label}) timed out "
+                        f"after {timeout} seconds: {' '.join(extract_cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if (
+                    extract_res.returncode != 0
+                    or not tmp_svg_path.exists()
+                    or tmp_svg_path.stat().st_size == 0
+                ):
+                    msg = (
+                        f"Failed to isolate group '{node.id}' ({node.label}) "
+                        f"to temporary SVG:\n{extract_res.stderr}"
+                    )
+                    raise RuntimeError(msg)
+
+                if fmt_clean == "tar":
+                    with tarfile.open(output_file, "w") as tar:
+                        tar.add(tmp_svg_path, arcname=f"{leaf_name}.svg")
+                elif fmt_clean == "zip":
+                    with zipfile.ZipFile(
+                        output_file, "w", compression=zipfile.ZIP_DEFLATED
+                    ) as zf:
+                        zf.write(tmp_svg_path, arcname=f"{leaf_name}.svg")
+                elif fmt_clean == "svgz":
+                    with open(tmp_svg_path, "rb") as f_in, gzip.open(
+                        output_file, "wb"
+                    ) as f_out:
+                        f_out.writelines(f_in)
+            finally:
+                if tmp_svg_path.exists():
+                    tmp_svg_path.unlink()
+
         else:
-            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, tar, etc.)
+            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, etc.)
             # Step 1: Extract isolated SVG sub-tree
             with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
                 tmp_svg_path = Path(tmp_svg.name)
@@ -663,6 +758,21 @@ def export_full_document(
                 if tmp_png_path.exists():
                     tmp_png_path.unlink()
 
+        elif fmt_clean in ARCHIVE_FORMATS:
+            if fmt_clean == "tar":
+                with tarfile.open(output_file, "w") as tar:
+                    tar.add(svg_file, arcname=f"{svg_file.stem}.svg")
+            elif fmt_clean == "zip":
+                with zipfile.ZipFile(
+                    output_file, "w", compression=zipfile.ZIP_DEFLATED
+                ) as zf:
+                    zf.write(svg_file, arcname=f"{svg_file.stem}.svg")
+            elif fmt_clean == "svgz":
+                with open(svg_file, "rb") as f_in, gzip.open(
+                    output_file, "wb"
+                ) as f_out:
+                    f_out.writelines(f_in)
+
         else:
             # Fallback direct invocation for other formats
             cmd = [
@@ -794,7 +904,7 @@ Examples:
         "--format",
         type=str,
         default=None,
-        help="Output export format (e.g. 'svg', 'png', 'pdf', 'eps', 'jpg', 'webp', 'tiff'). Defaults to 'svg'.",
+        help="Output export format (e.g. 'svg', 'png', 'pdf', 'eps', 'jpg', 'webp', 'tiff', 'tar', 'zip', 'svgz'). Defaults to 'svg'.",
     )
     parser.add_argument(
         "-o",

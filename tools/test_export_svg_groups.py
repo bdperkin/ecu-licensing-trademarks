@@ -368,6 +368,62 @@ class TestExportSvgGroups(unittest.TestCase):
             self.assertTrue(expected_file.exists())
             self.assertGreater(expected_file.stat().st_size, 0)
 
+    def test_archive_export_tar(self) -> None:
+        """Test archive export and verification for TAR."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 5",
+                        "--format",
+                        "tar",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Verified valid tar archive:", output)
+            expected_file = out_path / "fmt" / "tar" / "primary-mark" / "mark-5.tar"
+            self.assertTrue(expected_file.exists())
+            self.assertGreater(expected_file.stat().st_size, 0)
+
+    def test_archive_export_zip(self) -> None:
+        """Test archive export and verification for ZIP."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 5",
+                        "--format",
+                        "zip",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Verified valid zip archive:", output)
+            expected_file = out_path / "fmt" / "zip" / "primary-mark" / "mark-5.zip"
+            self.assertTrue(expected_file.exists())
+            self.assertGreater(expected_file.stat().st_size, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
