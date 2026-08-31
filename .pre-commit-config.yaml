@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=20000']
+      - id: requirements-txt-fixer
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.2
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        args: ['--disable', 'MD013', 'MD033', '--']
+
+  - repo: local
+    hooks:
+      - id: audit-svg
+        name: Audit Art Sheet SVG
+        entry: python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --strict -s
+        language: system
+        files: ^(src/.*\.svg|tools/.*)$
+        pass_filenames: false
+
+      - id: test-audit-tool
+        name: Run Audit Tool Unit Tests
+        entry: python3 -m unittest tools/test_audit_svg.py
+        language: system
+        files: ^tools/.*\.py$
+        pass_filenames: false
