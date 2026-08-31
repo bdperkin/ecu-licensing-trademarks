@@ -35,4 +35,3 @@ SPC
 subjec
 tes
 tions
-wher
