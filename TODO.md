@@ -1,0 +1,131 @@
+# ECU Art Sheet Review & Task Tracker
+
+Comprehensive status, architectural review, and task tracking for the East Carolina University Trademark Licensing Art Sheet SVG ([`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg`](src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg)).
+
+---
+
+## Executive Summary & Current Health
+
+- **Total Canvas Groups**: `1,115`
+- **Label Coverage**: **100%** (1,115 of 1,115 groups labeled, 0 missing labels)
+- **Top-Level Sections**: `25` logical sections organized across 3 pages
+- **Audit Tool Status**:
+  - `0` missing label errors
+  - `0` duplicate label errors (38 intentional font glyphs / sub-letter entries ignored in `tools/duplicates.txt`)
+  - `0` spelling errors (10 proper nouns / acronyms ignored in `tools/wordlist.txt`)
+  - `0` empty groups (0 objects)
+  - `0` single-object groups (1 object)
+  - `0` unused entries in ignore lists
+
+---
+
+## Top-Level Section Architecture
+
+| Page | Section Label | Description | Sub-Groups |
+| :--- | :--- | :--- | :---: |
+| **Page 1** | `Page 1 Title` | Title block (OLCP Logo, ECU header, revision date) | 5 |
+| | `Information Section` | Location, Mascot, Established, Conference details | 17 |
+| | `Verbiage Section` | 4-column approved verbiage list | 39 |
+| | `Colors Section` | Palette swatches, CMYK/RGB values, PANTONE guidelines | 57 |
+| | `Primary Mark` | Marks 1–7 (Skull & Crossbones primary marks) | 36 |
+| | `Primary Word Mark` | Marks 8–14 (ECU word marks & color column titles) | 84 |
+| | `Secondary Word Mark` | Marks 15–21 (Pirates word marks) | 68 |
+| | `Additional Word Marks`| Marks 22–35 (East Carolina word marks) | 208 |
+| | `Page 1 Footer` | Table guidelines footer cells (`Note`, `Marks`, `Use`) | 7 |
+| **Page 2** | `Page 2 Title` | Title block | 5 |
+| | `Sport Specific Marks` | Marks 36–50 (Sport lockups & guideline text) | 103 |
+| | `Pirate State of Mind Marks` | Marks 51–53 | 13 |
+| | `Script Pirates` | Marks 54–55 | 8 |
+| | `PeeDee Mark` | Marks 56–57 | 11 |
+| | `Helmet Mark` | Mark 58 | 7 |
+| | `No Quarter Mark` | Mark 59 & letters A–Z | 23 |
+| | `Fonts` | Marks 60–62 (Matrix & Gotham character sets A–Z) | 176 |
+| | `Page 2 Footer` | Table guidelines footer cells | 7 |
+| **Page 3** | `Page 3 Title` | Title block | 5 |
+| | `Brand Pattern Swatches` | Swatches 63–66 & guideline note cell | 26 |
+| | `Vertical Pattern` | Patterns 67–74 & 75–82 vertical swatch columns | 47 |
+| | `Horizontal Pattern` | Patterns 67–74 & 75–82 horizontal swatch columns | 47 |
+| | `Institutional Marks` | Marks 83–91 & usage guidelines | 61 |
+| | `Additional Pertinent Information` | Guideline bullet list & notes | 23 |
+| | `Page 3 Footer` | Table guidelines footer cells | 7 |
+
+---
+
+## TODO / Task Tracker
+
+### 1. Completed Work
+
+- [x] **Audit Script Development (`tools/audit_svg.py`)**
+  - [x] Check 1: Missing `inkscape:label` group detection
+  - [x] Check 2: Duplicate group label detection with occurrence counts and XML element path tracing
+  - [x] Check 3: Spell check on group labels using `pyspellchecker`
+  - [x] Check 4: Empty group (`0` objects) detection
+  - [x] Check 5: Single-object group (`1` object) detection
+  - [x] Single alphanumeric character ignore filter for empty and single-child checks (e.g. `'A'`, `'1'`, `'a'`)
+  - [x] Ignore `<defs>` descendant groups (font glyph definitions and template patterns) in audit discovery
+  - [x] Inverse duplicate check: flag entries in `duplicates.txt` not present in the SVG
+  - [x] Inverse spelling check: flag entries in `wordlist.txt` not present in any SVG label
+  - [x] Check selection CLI flags (`-c`, `--checks`, `--missing`, `--duplicates`, `--spelling`, `--empty`, `--single`)
+  - [x] Summary statistics reporting (`-s`, `--stats`, `--statistics`)
+  - [x] Strict duplicate check mode (`--strict-duplicates`, `--strict`, `--no-ignore-duplicates`) to audit all duplicates without ignore lists
+  - [x] Default sibling file discovery for `wordlist.txt` and `duplicates.txt`
+
+- [x] **SVG Group Structure & Labeling (Page 1)**
+  - [x] Page 1 Title (`Page 1 Title Cell`, `Page 1 OLCP Logo`, `Page 1 ECU (East Carolina University)`, `Page 1 Current Revision Date`)
+  - [x] Information Section (`Conference`, `Mascot Name`, `Mascot`, `Location`, `Established`)
+  - [x] Verbiage Section (4 approved verbiage columns)
+  - [x] Colors Section (palette swatches, RGB/CMYK values, PANTONE trademark guideline bullets)
+  - [x] Primary Mark Section (Marks 1–7)
+  - [x] Primary Word Mark Section (Marks 8–14, color variant headers, and letter decomposition)
+  - [x] Secondary Word Mark Section (Marks 15–21 and letter decomposition)
+  - [x] Additional Word Marks Section (Marks 22–35, `East` and `Carolina` sub-groups)
+  - [x] Page 1 Footer (`Page 1 Note`, `Page 1 Marks`, `Page 1 Use`)
+
+- [x] **SVG Group Structure & Labeling (Page 2)**
+  - [x] Page 2 Title (`Page 2 Title Cell`, `Page 2 OLCP Logo`, `Page 2 ECU (East Carolina University)`, `Page 2 Current Revision Date`)
+  - [x] Sport Specific Marks (Marks 36–50, sport names and logo sub-groups, guidelines)
+  - [x] Pirate State of Mind Marks (Marks 51–53)
+  - [x] Script Pirates Section (Marks 54–55, consolidated title header)
+  - [x] PeeDee Mark Section (Marks 56–57)
+  - [x] Helmet Mark Section (Mark 58)
+  - [x] No Quarter Mark Section (Mark 59 & letters A–Z)
+  - [x] Fonts Section (Marks 60–62, Matrix & Gotham letter glyphs A–Z)
+  - [x] Page 2 Footer (`Page 2 Note`, `Page 2 Marks`, `Page 2 Use`)
+
+- [x] **SVG Group Structure & Labeling (Page 3)**
+  - [x] Page 3 Title (`Page 3 Title Cell`, `Page 3 OLCP Logo`, `Page 3 ECU (East Carolina University)`, `Page 3 Current Revision Date`)
+  - [x] Brand Pattern Swatches (Swatches 63–66 & guideline note cell)
+  - [x] Vertical and Horizontal Patterns (Patterns 67–82, signal flags & icon patterns)
+  - [x] Institutional Marks (Marks 83–91, consolidated footnote texts & mark prefixes)
+  - [x] Additional Pertinent Information Section (guideline bullets & consolidated text)
+  - [x] Page 3 Footer (`Page 3 Note`, `Page 3 Marks`, `Page 3 Use`)
+
+- [x] **Audit & Hygiene Cleanliness**
+  - [x] Achieve 100% labeled group coverage across SVG (0 missing labels)
+  - [x] Resolve all false-positive typo fragments and trim `tools/wordlist.txt` down to 10 valid proper nouns/acronyms
+  - [x] Alphabetize and trim `tools/duplicates.txt` down to 38 entries
+  - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
+  - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
+
+---
+
+### 2. Remaining / Optimization Opportunities
+
+- [ ] **Mark Container Prefixing Uniformity**
+  - [ ] Standardize prefix conventions across specialized marks (decide whether `Script 54/55`, `Fonts 60-62`, `Swatch 63-66`, and `Pattern 67-82` should retain category prefixes or use uniform `Mark N` prefixes)
+- [ ] **Background Layer Wrapping & Naming Consistency**
+  - [ ] Wrap raw background `<path>` elements into `<g>` containers in Marks 15–20, Script 55, and Mark 84 for structural uniformity
+  - [ ] Normalize descriptive background labels to standard numbering (e.g. `Mark 52`: `Pirate State of Mind Background` -> `52 Background`; `Mark 87`: `Stacked White ECU Background` -> `87 Background`)
+- [ ] **Wordmark Letter Decomposition Completeness**
+  - [ ] Decompose single-color solid wordmarks into individual letter groups if full letter-level atomicity is desired across all variants:
+    - [ ] Primary Word Mark 13 and 14 (E, C, U)
+    - [ ] Secondary Word Mark 20 and 21 (P, I, R, A, T, E, S)
+    - [ ] Additional Word Marks 27, 28, 34, and 35 (E, A, S, T / C, A, R, O, L, I, N, A)
+- [ ] **Duplicate Ignore List Minimization**
+  - [ ] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina A` in Additional Word Marks
+  - [ ] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by prefixing `Verbiage Mascot Name` vs `Information Mascot Name`
+  - [ ] (Optional) Prefix font glyphs in Marks 60–62 with font names (`Matrix A` vs `Gotham A`) to completely eliminate all 38 remaining duplicate ignore entries
+- [ ] **Mark 90 Note Label Alignment**
+  - [ ] Rename generic `Note` in Mark 90 to `ECU Health Note` or `Mark 90 Note` to align with `No Quarter Note` (Mark 59) and `University Seal Note` (Mark 91)
+- [ ] **Continuous Integration & Pre-commit Hooks**
+  - [ ] Configure `.pre-commit-config.yaml` or CI workflow to automatically run `python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -s` on commits and pull requests
