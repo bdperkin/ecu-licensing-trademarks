@@ -6,12 +6,12 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 ## Executive Summary & Current Health
 
-- **Total Canvas Groups**: `1,115`
-- **Label Coverage**: **100%** (1,115 of 1,115 groups labeled, 0 missing labels)
+- **Total Canvas Groups**: `1,045`
+- **Label Coverage**: **100%** (1,045 of 1,045 groups labeled, 0 missing labels)
 - **Top-Level Sections**: `25` logical sections organized across 3 pages
 - **Audit Tool Status**:
   - `0` missing label errors
-  - `0` duplicate label errors (26 intentional font glyphs / character entries ignored in `tools/duplicates.txt`)
+  - `0` duplicate label errors (0 duplicates across entire SVG, 0 entries needed in `tools/duplicates.txt`)
   - `0` spelling errors (10 proper nouns / acronyms ignored in `tools/wordlist.txt`)
   - `0` empty groups (0 objects)
   - `0` single-object groups (1 object)
@@ -103,10 +103,11 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 - [x] **Audit & Hygiene Cleanliness**
   - [x] Achieve 100% labeled group coverage across SVG (0 missing labels)
   - [x] Resolve all false-positive typo fragments and trim `tools/wordlist.txt` down to 10 valid proper nouns/acronyms
-  - [x] Alphabetize and trim `tools/duplicates.txt` down to 26 entries
+  - [x] Eliminate all duplicate labels across entire SVG (reducing `tools/duplicates.txt` down to 0 entries)
   - [x] Adopt uniform `Mark N` prefixes across all 91 marks (`Mark 1` through `Mark 91`)
   - [x] Standardize background layer wrapping and numbering (`[N] Background`) across all marks (Marks 15–20, 52, 55, 84, 87)
   - [x] Complete letter and symbol path labeling across all word mark variants (Primary 8–14, Secondary 15–21, Additional 22–35)
+  - [x] Prefix font character glyphs in Marks 60–62 with font and mark names (`[N] Matrix [A-Z]`, `[N] Gotham [A-Z]`) and Mark 59 letters
   - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
@@ -115,9 +116,5 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 ### 2. Remaining / Optimization Opportunities
 
-- [ ] **Duplicate Ignore List Minimization**
-  - [x] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina 1st/2nd A` in Additional Word Marks
-  - [x] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by adding `Information` suffix in Information Section
-  - [ ] (Optional) Prefix font glyphs in Marks 60–62 with font names (`Matrix A` vs `Gotham A`) to completely eliminate all 26 remaining duplicate ignore entries
 - [ ] **Continuous Integration & Pre-commit Hooks**
   - [ ] Configure `.pre-commit-config.yaml` or CI workflow to automatically run `python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -s` on commits and pull requests
