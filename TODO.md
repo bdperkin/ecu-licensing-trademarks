@@ -116,7 +116,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 - [ ] **Wordmark Letter Decomposition Completeness**
   - [ ] Decompose single-color solid wordmarks into individual letter paths/groups if full letter-level atomicity is desired across all variants:
     - [x] Primary Word Mark 13 and 14 (E, C, U, (R))
-    - [ ] Secondary Word Mark 20 and 21 (P, I, R, A, T, E, S)
+    - [x] Secondary Word Mark 20 and 21 (P, I, R, A, T, E, S)
     - [ ] Additional Word Marks 27, 28, 34, and 35 (E, A, S, T / C, A, R, O, L, I, N, A)
 - [ ] **Duplicate Ignore List Minimization**
   - [ ] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina A` in Additional Word Marks
