@@ -55,14 +55,17 @@ def get_element_path(elem):
 
 def load_wordlist(file_path):
     if not file_path:
-        return set()
+        return set(), []
     ignore_words = set()
+    raw_word_entries = []
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
+                if line not in raw_word_entries:
+                    raw_word_entries.append(line)
                 # Split line into tokens
                 raw_tokens = re.split(r'[\s_\-]+', line)
                 for token in raw_tokens:
@@ -80,19 +83,20 @@ def load_wordlist(file_path):
     except Exception as e:
         print(f"Error reading word list file '{file_path}': {e}", file=sys.stderr)
         sys.exit(1)
-    return ignore_words
+    return ignore_words, raw_word_entries
 
 def load_duplicates_list(file_path):
     if not file_path:
-        return set()
-    ignore_duplicates = set()
+        return []
+    ignore_duplicates = []
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                ignore_duplicates.add(line)
+                if line not in ignore_duplicates:
+                    ignore_duplicates.append(line)
     except FileNotFoundError:
         print(f"Error: Duplicates list file not found: '{file_path}'", file=sys.stderr)
         sys.exit(1)
@@ -150,7 +154,7 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    if wordlist_path is None and "spelling" in active_checks:
+    if wordlist_path is None and ("spelling" in active_checks or show_stats):
         wordlist_path = get_default_wordlist_path()
 
     if duplicates_list_path is None and ("duplicates" in active_checks or show_stats):
@@ -208,10 +212,12 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
         else:
             print("  - No groups missing labels found.\n")
 
-    ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if "duplicates" in active_checks or show_stats else set()
+    ignore_duplicate_names = load_duplicates_list(duplicates_list_path) if "duplicates" in active_checks or show_stats else []
+    ignore_duplicate_set = set(ignore_duplicate_names)
     all_duplicate_labels = {lbl: paths for lbl, paths in label_paths.items() if len(paths) > 1}
-    reported_duplicate_labels = {lbl: paths for lbl, paths in all_duplicate_labels.items() if lbl not in ignore_duplicate_names}
+    reported_duplicate_labels = {lbl: paths for lbl, paths in all_duplicate_labels.items() if lbl not in ignore_duplicate_set}
     reported_duplicate_groups_count = sum(len(paths) for paths in reported_duplicate_labels.values())
+    unused_duplicate_names = [lbl for lbl in ignore_duplicate_names if lbl not in label_paths]
 
     if "duplicates" in active_checks:
         print("=== 2. Duplicate Group Labels ===")
@@ -220,17 +226,43 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
                 print(f"  - Label '{label}' ({len(paths)} occurrences) is duplicated across paths:")
                 for path in paths:
                     print(f"    * {path}")
-            print()
         else:
-            print("  - No duplicate labels found.\n")
+            print("  - No duplicate labels found.")
+
+        if unused_duplicate_names:
+            print(f"  - Unused ignore duplicates ({len(unused_duplicate_names)} entries not found in SVG - flagged for removal):")
+            for lbl in unused_duplicate_names:
+                print(f"    * '{lbl}'")
+        print()
 
     spelling_error_labels_count = 0
     unique_typos = set()
     ignore_words = set()
+    raw_word_entries = []
+    unused_ignore_words = []
+
+    if "spelling" in active_checks or show_stats:
+        ignore_words, raw_word_entries = load_wordlist(wordlist_path)
+        all_svg_tokens = set()
+        for label, g_path in labels:
+            raw_tokens = re.split(r'[\s_\-]+', label)
+            for token in raw_tokens:
+                sub_tokens = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|\b)', token)
+                if sub_tokens:
+                    all_svg_tokens.update(t.lower() for t in sub_tokens if len(t) > 1)
+                elif len(token) > 1 and token.isalpha():
+                    all_svg_tokens.add(token.lower())
+            for w in re.findall(r'\b[a-zA-Z]+\b', label.lower()):
+                if len(w) > 1:
+                    all_svg_tokens.add(w)
+
+        for w_entry in raw_word_entries:
+            tokens = [t.lower() for t in re.findall(r'[A-Za-z]+', w_entry) if len(t) > 1]
+            if not any(t in all_svg_tokens for t in tokens) and w_entry.lower() not in all_svg_tokens:
+                unused_ignore_words.append(w_entry)
 
     if "spelling" in active_checks:
         spell = SpellChecker()
-        ignore_words = load_wordlist(wordlist_path)
         if ignore_words:
             spell.word_frequency.load_words(ignore_words)
 
@@ -255,9 +287,13 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
                 print(f"  - Label '{label}' at path '{g_path}' contains potential typos: {list(misspelled)}")
 
         if not spelling_issues:
-            print("  - No spelling issues detected in labels.\n")
-        else:
-            print()
+            print("  - No spelling issues detected in labels.")
+
+        if unused_ignore_words:
+            print(f"  - Unused ignore words ({len(unused_ignore_words)} entries not found in SVG - flagged for removal):")
+            for w_entry in unused_ignore_words:
+                print(f"    * '{w_entry}'")
+        print()
 
     if "empty" in active_checks:
         print("=== 4. Empty Groups (0 Objects) ===")
@@ -294,10 +330,12 @@ def audit_inkscape_svg(file_path, wordlist_path=None, duplicates_list_path=None,
             print(f"  - Duplicate label names: {len(reported_duplicate_labels)} (spanning {reported_duplicate_groups_count} groups)")
             if ignore_duplicate_names:
                 print(f"  - Ignored duplicate names loaded: {len(ignore_duplicate_names)}")
+                print(f"  - Unused ignored duplicate names: {len(unused_duplicate_names)}")
         if "spelling" in active_checks:
             print(f"  - Labels with potential typos: {spelling_error_labels_count} ({len(unique_typos)} unique typo words)")
-            if ignore_words:
-                print(f"  - Ignored words loaded: {len(ignore_words)}")
+            if raw_word_entries:
+                print(f"  - Ignored words loaded: {len(raw_word_entries)}")
+                print(f"  - Unused ignored words: {len(unused_ignore_words)}")
         if "empty" in active_checks:
             print(f"  - Empty groups (0 objects): {len(empty_groups)}")
         if "single" in active_checks:
