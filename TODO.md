@@ -114,8 +114,8 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 ### 2. Remaining / Optimization Opportunities
 
 - [ ] **Wordmark Letter Decomposition Completeness**
-  - [ ] Decompose single-color solid wordmarks into individual letter groups if full letter-level atomicity is desired across all variants:
-    - [ ] Primary Word Mark 13 and 14 (E, C, U)
+  - [ ] Decompose single-color solid wordmarks into individual letter paths/groups if full letter-level atomicity is desired across all variants:
+    - [x] Primary Word Mark 13 and 14 (E, C, U, (R))
     - [ ] Secondary Word Mark 20 and 21 (P, I, R, A, T, E, S)
     - [ ] Additional Word Marks 27, 28, 34, and 35 (E, A, S, T / C, A, R, O, L, I, N, A)
 - [ ] **Duplicate Ignore List Minimization**
