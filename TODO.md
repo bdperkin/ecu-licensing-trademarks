@@ -11,7 +11,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 - **Top-Level Sections**: `25` logical sections organized across 3 pages
 - **Audit Tool Status**:
   - `0` missing label errors
-  - `0` duplicate label errors (38 intentional font glyphs / sub-letter entries ignored in `tools/duplicates.txt`)
+  - `0` duplicate label errors (36 intentional font glyphs / sub-letter entries ignored in `tools/duplicates.txt`)
   - `0` spelling errors (10 proper nouns / acronyms ignored in `tools/wordlist.txt`)
   - `0` empty groups (0 objects)
   - `0` single-object groups (1 object)
@@ -103,7 +103,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 - [x] **Audit & Hygiene Cleanliness**
   - [x] Achieve 100% labeled group coverage across SVG (0 missing labels)
   - [x] Resolve all false-positive typo fragments and trim `tools/wordlist.txt` down to 10 valid proper nouns/acronyms
-  - [x] Alphabetize and trim `tools/duplicates.txt` down to 38 entries
+  - [x] Alphabetize and trim `tools/duplicates.txt` down to 36 entries
   - [x] Adopt uniform `Mark N` prefixes across all 91 marks (`Mark 1` through `Mark 91`)
   - [x] Standardize background layer wrapping and numbering (`[N] Background`) across all marks (Marks 15–20, 52, 55, 84, 87)
   - [x] Complete letter and symbol path labeling across all word mark variants (Primary 8–14, Secondary 15–21, Additional 22–35)
@@ -116,8 +116,8 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 - [ ] **Duplicate Ignore List Minimization**
   - [ ] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina A` in Additional Word Marks
-  - [ ] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by prefixing `Verbiage Mascot Name` vs `Information Mascot Name`
-  - [ ] (Optional) Prefix font glyphs in Marks 60–62 with font names (`Matrix A` vs `Gotham A`) to completely eliminate all 38 remaining duplicate ignore entries
+  - [x] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by adding `Information` suffix in Information Section
+  - [ ] (Optional) Prefix font glyphs in Marks 60–62 with font names (`Matrix A` vs `Gotham A`) to completely eliminate all 36 remaining duplicate ignore entries
 - [ ] **Mark 90 Note Label Alignment**
   - [ ] Rename generic `Note` in Mark 90 to `ECU Health Note` or `Mark 90 Note` to align with `No Quarter Note` (Mark 59) and `University Seal Note` (Mark 91)
 - [ ] **Continuous Integration & Pre-commit Hooks**
