@@ -1,7 +1,6 @@
 allo
 appr
 Arrrgh
-backg
 cir
 cumstances
 curr
@@ -11,8 +10,6 @@ diplo
 EC
 ee
 ent
-ersit
-eview
 evision
 ficial
 Ficklen
@@ -22,10 +19,7 @@ Minges
 NC
 OLCP
 olor
-olors
 omotional
-ound
 palett
 PANTONE
 SPC
-subjec
