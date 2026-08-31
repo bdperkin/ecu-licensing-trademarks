@@ -106,6 +106,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Alphabetize and trim `tools/duplicates.txt` down to 38 entries
   - [x] Adopt uniform `Mark N` prefixes across all 91 marks (`Mark 1` through `Mark 91`)
   - [x] Standardize background layer wrapping and numbering (`[N] Background`) across all marks (Marks 15–20, 52, 55, 84, 87)
+  - [x] Complete letter and symbol path labeling across all word mark variants (Primary 8–14, Secondary 15–21, Additional 22–35)
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
@@ -113,11 +114,6 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 
 ### 2. Remaining / Optimization Opportunities
 
-- [ ] **Wordmark Letter Decomposition Completeness**
-  - [ ] Decompose single-color solid wordmarks into individual letter paths/groups if full letter-level atomicity is desired across all variants:
-    - [x] Primary Word Mark 13 and 14 (E, C, U, (R))
-    - [x] Secondary Word Mark 20 and 21 (P, I, R, A, T, E, S)
-    - [ ] Additional Word Marks 27, 28, 34, and 35 (E, A, S, T / C, A, R, O, L, I, N, A)
 - [ ] **Duplicate Ignore List Minimization**
   - [ ] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina A` in Additional Word Marks
   - [ ] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by prefixing `Verbiage Mascot Name` vs `Information Mascot Name`
