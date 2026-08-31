@@ -8,6 +8,7 @@ hierarchical subtrees, or full documents into structured directory layouts.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fnmatch
 import gzip
 import re
@@ -117,10 +118,11 @@ def parse_svg_groups(svg_file: Path) -> list[GroupNode]:
         ancestors: list[str],
         parent_id: str | None,
     ) -> None:
-        tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+        raw_tag = str(elem.tag)
+        tag = raw_tag.rpartition("}")[2] if "}" in raw_tag else raw_tag
         if tag == "g":
-            gid = elem.get("id", "")
-            lbl = elem.get(f"{{{INKSCAPE_NS}}}label", "")
+            gid = str(elem.get("id", ""))
+            lbl = str(elem.get(f"{{{INKSCAPE_NS}}}label", ""))
             node = GroupNode(
                 element=elem,
                 id=gid,
@@ -142,7 +144,8 @@ def parse_svg_groups(svg_file: Path) -> list[GroupNode]:
 
     # Only traverse canvas root groups, skipping <defs>
     for top_elem in root:
-        tag = top_elem.tag.split("}")[-1] if "}" in top_elem.tag else top_elem.tag
+        raw_top_tag = str(top_elem.tag)
+        tag = raw_top_tag.rpartition("}")[2] if "}" in raw_top_tag else raw_top_tag
         if tag != "defs":
             _traverse(top_elem, depth=0, ancestors=[], parent_id=None)
 
@@ -161,9 +164,7 @@ def render_group_tree(nodes: list[GroupNode]) -> str:
     for node in nodes:
         children_map.setdefault(node.parent_id, []).append(node)
 
-    def _build_tree_lines(
-        parent_id: str | None, prefix: str = "", is_root: bool = True
-    ) -> None:
+    def _build_tree_lines(parent_id: str | None, prefix: str = "", is_root: bool = True) -> None:
         children = children_map.get(parent_id, [])
         for i, child in enumerate(children):
             is_last = i == len(children) - 1
@@ -215,25 +216,22 @@ def filter_groups(
     # Regex or glob matching
     matched: list[GroupNode] = []
     regex = None
-    try:
+    with contextlib.suppress(re.error):
         regex = re.compile(pattern_stripped, re.IGNORECASE)
-    except re.error:
-        pass
 
     for node in nodes:
         target_label = node.label
         target_id = node.id
         is_match = False
 
-        if regex:
-            if regex.search(target_label) or (target_id and regex.search(target_id)):
-                is_match = True
+        if regex and (regex.search(target_label) or (target_id and regex.search(target_id))):
+            is_match = True
 
-        if not is_match:
-            if fnmatch.fnmatch(
-                target_label.lower(), pattern_stripped.lower()
-            ) or fnmatch.fnmatch(target_id.lower(), pattern_stripped.lower()):
-                is_match = True
+        if not is_match and (
+            fnmatch.fnmatch(target_label.lower(), pattern_stripped.lower())
+            or fnmatch.fnmatch(target_id.lower(), pattern_stripped.lower())
+        ):
+            is_match = True
 
         if is_match:
             matched.append(node)
@@ -285,6 +283,20 @@ def verify_exported_file(
         except Exception as e:
             msg = f"Exported file '{output_file}' is not a valid svgz archive: {e}"
             raise RuntimeError(msg) from e
+    if suffix == ".xaml":
+        try:
+            tree = etree.parse(str(output_file))
+            root = tree.getroot()
+            tag = str(root.tag).rpartition("}")[2] if "}" in str(root.tag) else str(root.tag)
+            if tag not in ("ResourceDictionary", "Canvas", "DrawingGroup", "Viewbox"):
+                msg = f"Exported XAML file '{output_file}' has unexpected root element '<{tag}>'."
+                raise RuntimeError(msg)
+            if verbose:
+                print(f"[VERBOSE] Verified valid XAML document (<{tag}>): {output_file}")
+            return
+        except Exception as e:
+            msg = f"Exported file '{output_file}' is not a valid XAML document: {e}"
+            raise RuntimeError(msg) from e
 
     # Image validation via ImageMagick
     magick_path = shutil.which("magick") or shutil.which("identify")
@@ -303,9 +315,7 @@ def verify_exported_file(
                 timeout=timeout,
             )
             if res.returncode == 0 and verbose:
-                print(
-                    f"[VERBOSE] ImageMagick sanity check passed: {res.stdout.strip()}"
-                )
+                print(f"[VERBOSE] ImageMagick sanity check passed: {res.stdout.strip()}")
             elif res.returncode != 0 and verbose:
                 # Some vector formats (e.g. hpgl, pov) might not be fully identified by identify
                 print(
@@ -313,6 +323,22 @@ def verify_exported_file(
                 )
         except (subprocess.SubprocessError, OSError):
             pass
+
+
+def annotate_svg_layers(svg_path: Path, default_label: str = "Layer") -> None:
+    """Annotate top-level groups in an SVG with inkscape:groupmode='layer' for layer-aware extensions (e.g. XAML)."""
+    tree = etree.parse(str(svg_path))
+    root = tree.getroot()
+    has_changes = False
+    for child in root.iterchildren():
+        tag = str(child.tag).rpartition("}")[2] if "}" in str(child.tag) else str(child.tag)
+        if tag not in ("defs", "metadata", "namedview") and tag == "g":
+            child.set(f"{{{INKSCAPE_NS}}}groupmode", "layer")
+            if not child.get(f"{{{INKSCAPE_NS}}}label"):
+                child.set(f"{{{INKSCAPE_NS}}}label", default_label)
+            has_changes = True
+    if has_changes:
+        tree.write(str(svg_path), encoding="utf-8", xml_declaration=True)
 
 
 def export_group(
@@ -339,9 +365,7 @@ def export_group(
 
     # 2. Ancestor directories: <output_base_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/...
     ancestor_path_parts = [normalize_slug(a) for a in node.ancestor_labels]
-    target_dir = (
-        fmt_dir.joinpath(*ancestor_path_parts) if ancestor_path_parts else fmt_dir
-    )
+    target_dir = fmt_dir.joinpath(*ancestor_path_parts) if ancestor_path_parts else fmt_dir
 
     # 3. Leaf filename: <leaf_label>.<fmt>
     leaf_name = normalize_slug(node.label or node.id)
@@ -410,9 +434,7 @@ def export_group(
                     f"--export-filename={tmp_png_path}",
                 ]
                 if verbose:
-                    print(
-                        f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}"
-                    )
+                    print(f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}")
 
                 try:
                     render_res = subprocess.run(
@@ -511,14 +533,10 @@ def export_group(
                     with tarfile.open(output_file, "w") as tar:
                         tar.add(tmp_svg_path, arcname=f"{leaf_name}.svg")
                 elif fmt_clean == "zip":
-                    with zipfile.ZipFile(
-                        output_file, "w", compression=zipfile.ZIP_DEFLATED
-                    ) as zf:
+                    with zipfile.ZipFile(output_file, "w", compression=zipfile.ZIP_DEFLATED) as zf:
                         zf.write(tmp_svg_path, arcname=f"{leaf_name}.svg")
                 elif fmt_clean == "svgz":
-                    with open(tmp_svg_path, "rb") as f_in, gzip.open(
-                        output_file, "wb"
-                    ) as f_out:
+                    with tmp_svg_path.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
                         f_out.writelines(f_in)
             finally:
                 if tmp_svg_path.exists():
@@ -567,6 +585,10 @@ def export_group(
                         f"to temporary SVG:\n{extract_res.stderr}"
                     )
                     raise RuntimeError(msg)
+
+                # Annotate top-level group as layer for layer-aware extensions (e.g. XAML)
+                if fmt_clean == "xaml":
+                    annotate_svg_layers(tmp_svg_path, default_label=node.label or node.id)
 
                 # Step 2: Convert isolated SVG to target format
                 convert_cmd = [
@@ -703,9 +725,7 @@ def export_full_document(
                     f"--export-filename={tmp_png_path}",
                 ]
                 if verbose:
-                    print(
-                        f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}"
-                    )
+                    print(f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}")
 
                 try:
                     render_res = subprocess.run(
@@ -763,15 +783,60 @@ def export_full_document(
                 with tarfile.open(output_file, "w") as tar:
                     tar.add(svg_file, arcname=f"{svg_file.stem}.svg")
             elif fmt_clean == "zip":
-                with zipfile.ZipFile(
-                    output_file, "w", compression=zipfile.ZIP_DEFLATED
-                ) as zf:
+                with zipfile.ZipFile(output_file, "w", compression=zipfile.ZIP_DEFLATED) as zf:
                     zf.write(svg_file, arcname=f"{svg_file.stem}.svg")
             elif fmt_clean == "svgz":
-                with open(svg_file, "rb") as f_in, gzip.open(
-                    output_file, "wb"
-                ) as f_out:
+                with svg_file.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
                     f_out.writelines(f_in)
+
+        elif fmt_clean == "xaml":
+            # XAML extension requires layers for resources; annotate copy of document
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                tmp_svg_path = Path(tmp_svg.name)
+            try:
+                shutil.copy2(svg_file, tmp_svg_path)
+                annotate_svg_layers(tmp_svg_path, default_label=svg_file.stem)
+                cmd = [
+                    inkscape_path,
+                    str(tmp_svg_path),
+                    f"--export-filename={output_file}",
+                ]
+                if verbose:
+                    print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Export of full document '{svg_file.name}' timed out "
+                        f"after {timeout} seconds: {' '.join(cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if verbose and result.stdout:
+                    print(result.stdout)
+                if verbose and result.stderr:
+                    print(result.stderr, file=sys.stderr)
+
+                if (
+                    result.returncode != 0
+                    or "Failed to save" in result.stderr
+                    or "Script Error" in result.stderr
+                ):
+                    msg = (
+                        f"Failed to export full document '{svg_file}' "
+                        f"to {output_file}:\n{result.stderr}"
+                    )
+                    raise RuntimeError(msg)
+            finally:
+                if tmp_svg_path.exists():
+                    tmp_svg_path.unlink()
 
         else:
             # Fallback direct invocation for other formats
@@ -819,11 +884,7 @@ def export_full_document(
         verify_exported_file(output_file, verbose=verbose, timeout=timeout)
 
     if verbose or dry_run:
-        prefix = (
-            "[DRY-RUN] Would export full document"
-            if dry_run
-            else "Exported full document"
-        )
+        prefix = "[DRY-RUN] Would export full document" if dry_run else "Exported full document"
         print(f"{prefix}: '{svg_file.name}' -> {output_file}")
 
     return output_file
@@ -968,9 +1029,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not args.svg_file.exists():
-        print(
-            f"Error: Input SVG file '{args.svg_file}' does not exist.", file=sys.stderr
-        )
+        print(f"Error: Input SVG file '{args.svg_file}' does not exist.", file=sys.stderr)
         return 1
 
     # Validate output format if specified
@@ -1018,11 +1077,9 @@ def main(argv: list[str] | None = None) -> int:
         # If a filter pattern is also provided with --list, filter tree
         if args.pattern:
             matched = filter_groups(groups, args.pattern)
-            print(
-                f"Found {len(matched)} matching group(s) for pattern '{args.pattern}':\n"
-            )
+            print(f"Found {len(matched)} matching group(s) for pattern '{args.pattern}':\n")
             for node in matched:
-                path_str = " / ".join(node.ancestor_labels + [node.label or node.id])
+                path_str = " / ".join([*node.ancestor_labels, node.label or node.id])
                 print(f"[{node.id}] {path_str}")
         else:
             print(render_group_tree(groups))

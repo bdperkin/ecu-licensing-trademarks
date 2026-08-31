@@ -1,0 +1,77 @@
+[project]
+name = "ecu-licensing-trademarks"
+version = "0.1.0"
+description = "Tools and assets for East Carolina University licensing and trademarks vector art sheets"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Brandon Perkins", email = "bperkins@redhat.com" }
+]
+dependencies = [
+    "lxml>=6.1.2",
+    "pyspellchecker>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.6.2",
+    "ruff>=0.9.0",
+    "types-lxml>=2026.2.16",
+]
+
+[dependency-groups]
+dev = [
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.6.2",
+    "ruff>=0.9.0",
+    "types-lxml>=2026.2.16",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["tools"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "PTH",   # flake8-use-pathlib
+    "RUF",   # Ruff-specific rules
+    "PL",    # Pylint
+]
+ignore = [
+    "E501",    # Line length (handled by ruff-format)
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments in function definition
+    "PLR0915", # Too many statements
+    "PLR0917", # Too many positional arguments
+    "PLR2004", # Magic value used in comparison
+    "PLW2901", # Loop variable overwritten
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tools"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ty]
+# Astral ty type checker configuration

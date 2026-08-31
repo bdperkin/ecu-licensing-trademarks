@@ -99,6 +99,30 @@ To execute all unit test suites in the `tools/` directory:
 python3 -m unittest discover -s tools
 ```
 
+## Development Tooling (Astral Suite)
+
+This project leverages the Astral toolchain for fast package management, linting, formatting, and static typing:
+
+- **Astral `uv`**: Fast package management and environment synchronization:
+
+  ```bash
+  uv sync --all-extras --dev
+  uv run python3 -m unittest discover -s tools
+  ```
+
+- **Astral `ruff`**: Linting and formatting:
+
+  ```bash
+  uv run ruff check . --fix
+  uv run ruff format .
+  ```
+
+- **Astral `ty`**: Ultra-fast static type checking:
+
+  ```bash
+  ty check
+  ```
+
 ---
 
 ## Ignore Dictionaries

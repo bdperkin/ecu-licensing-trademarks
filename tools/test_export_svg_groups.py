@@ -34,9 +34,7 @@ class TestExportSvgGroups(unittest.TestCase):
         self.assertEqual(normalize_slug("Primary Mark"), "primary-mark")
         self.assertEqual(normalize_slug("Page 1 Title"), "page-1-title")
         self.assertEqual(normalize_slug("Mark 5"), "mark-5")
-        self.assertEqual(
-            normalize_slug("Gold & Black / Powder Blue!"), "gold-black-powder-blue"
-        )
+        self.assertEqual(normalize_slug("Gold & Black / Powder Blue!"), "gold-black-powder-blue")
         self.assertEqual(normalize_slug(""), "unlabeled")
         self.assertEqual(normalize_slug("---"), "unlabeled")
 
@@ -290,9 +288,7 @@ class TestExportSvgGroups(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("[VERBOSE] Isolating group SVG:", output)
             self.assertIn("[VERBOSE] Converting isolated SVG:", output)
-            expected_file = (
-                out_path / "fmt" / "hpgl" / "brand-pattern-swatches" / "mark-63.hpgl"
-            )
+            expected_file = out_path / "fmt" / "hpgl" / "brand-pattern-swatches" / "mark-63.hpgl"
             self.assertTrue(expected_file.exists())
             self.assertGreater(expected_file.stat().st_size, 0)
 
@@ -339,9 +335,7 @@ class TestExportSvgGroups(unittest.TestCase):
 
     def test_raster_export_and_verification_jpg(self) -> None:
         """Test raster conversion and post-export verification for JPG."""
-        if not shutil.which("inkscape") or not (
-            shutil.which("magick") or shutil.which("convert")
-        ):
+        if not shutil.which("inkscape") or not (shutil.which("magick") or shutil.which("convert")):
             self.skipTest("Inkscape or ImageMagick not installed in environment")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -421,6 +415,34 @@ class TestExportSvgGroups(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("[VERBOSE] Verified valid zip archive:", output)
             expected_file = out_path / "fmt" / "zip" / "primary-mark" / "mark-5.zip"
+            self.assertTrue(expected_file.exists())
+            self.assertGreater(expected_file.stat().st_size, 0)
+
+    def test_export_xaml(self) -> None:
+        """Test XAML export and ResourceDictionary verification."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 5",
+                        "--format",
+                        "xaml",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Verified valid XAML document", output)
+            expected_file = out_path / "fmt" / "xaml" / "primary-mark" / "mark-5.xaml"
             self.assertTrue(expected_file.exists())
             self.assertGreater(expected_file.stat().st_size, 0)
 
