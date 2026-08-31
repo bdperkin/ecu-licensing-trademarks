@@ -155,3 +155,8 @@ Gold Outline
 24 A
 25 A
 26 A
+29 A
+30 A
+31 A
+32 A
+33 A
