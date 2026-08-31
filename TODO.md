@@ -9,12 +9,15 @@ Comprehensive status, architectural review, and task tracking for the East Carol
 - **Total Canvas Groups**: `1,045`
 - **Label Coverage**: **100%** (1,045 of 1,045 groups labeled, 0 missing labels)
 - **Top-Level Sections**: `25` logical sections organized across 3 pages
-- **Audit Tool Status**:
-  - `0` missing label errors
-  - `0` duplicate label errors (0 duplicates across entire SVG, 0 entries needed in `tools/duplicates.txt`)
-  - `0` spelling errors (10 proper nouns / acronyms ignored in `tools/wordlist.txt`)
-  - `0` empty groups (0 objects)
-  - `0` single-object groups (1 object)
+- **Audit Tool Status (8 Automated Checks)**:
+  - `0` missing label errors (Check 1: `missing`)
+  - `0` duplicate label errors (Check 2: `duplicates`)
+  - `0` spelling errors (Check 3: `spelling` - 10 proper nouns / acronyms in `tools/wordlist.txt`)
+  - `0` empty groups (Check 4: `empty`)
+  - `0` single-object groups (Check 5: `single`)
+  - `0` label formatting defects (Check 6: `formatting`)
+  - `91` numbered marks verified sequentially with indicator groups (Check 7: `marks`)
+  - `0` ungrouped / stranded elements at canvas root (Check 8: `ungrouped`)
   - `0` unused entries in ignore lists
 
 ---
@@ -109,6 +112,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Complete letter and symbol path labeling across all word mark variants (Primary 8–14, Secondary 15–21, Additional 22–35)
   - [x] Prefix font character glyphs in Marks 60–62 with font and mark names (`[N] Matrix [A-Z]`, `[N] Gotham [A-Z]`) and Mark 59 letters
   - [x] Rename and align `ECU Health Note` in Institutional Marks
+  - [x] Expand `tools/audit_svg.py` to 8 automated checks (adding label formatting, numbered marks sequence/indicator validation, and canvas-root stranded element checks)
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
