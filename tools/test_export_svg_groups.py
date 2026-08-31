@@ -264,6 +264,37 @@ class TestExportSvgGroups(unittest.TestCase):
             expected_file = out_path / "fmt" / "svg" / "primary-mark" / "mark-5.svg"
             self.assertTrue(expected_file.exists())
 
+    def test_extension_format_export_hpgl(self) -> None:
+        """Test two-step isolation export for extension-based format (HPGL)."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--group",
+                        "Mark 63",
+                        "--format",
+                        "hpgl",
+                        "--output-dir",
+                        str(out_path),
+                        "--verbose",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("[VERBOSE] Isolating group SVG:", output)
+            self.assertIn("[VERBOSE] Converting isolated SVG:", output)
+            expected_file = (
+                out_path / "fmt" / "hpgl" / "brand-pattern-swatches" / "mark-63.hpgl"
+            )
+            self.assertTrue(expected_file.exists())
+            self.assertGreater(expected_file.stat().st_size, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

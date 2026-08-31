@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import NamedTuple
 
@@ -249,34 +250,88 @@ def export_group(
     if not dry_run:
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        cmd = [
-            inkscape_path,
-            str(svg_file),
-            f"--export-id={node.id}",
-            "--export-id-only",
-            f"--export-filename={output_file}",
-        ]
+        fmt_clean = fmt.lower()
+        if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
+            cmd = [
+                inkscape_path,
+                str(svg_file),
+                f"--export-id={node.id}",
+                "--export-id-only",
+                f"--export-filename={output_file}",
+            ]
 
-        if fmt.lower() == "svg":
-            cmd.append("--export-plain-svg")
-        elif fmt.lower() == "png":
-            cmd.append(f"--export-dpi={dpi}")
+            if fmt_clean == "svg":
+                cmd.append("--export-plain-svg")
+            elif fmt_clean == "png":
+                cmd.append(f"--export-dpi={dpi}")
 
-        if verbose:
-            print(f"[VERBOSE] Running: {' '.join(cmd)}")
+            if verbose:
+                print(f"[VERBOSE] Running: {' '.join(cmd)}")
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        if verbose and result.stdout:
-            print(result.stdout)
-        if verbose and result.stderr:
-            print(result.stderr, file=sys.stderr)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            if verbose and result.stdout:
+                print(result.stdout)
+            if verbose and result.stderr:
+                print(result.stderr, file=sys.stderr)
 
-        if result.returncode != 0:
-            msg = (
-                f"Failed to export group '{node.id}' ({node.label}) "
-                f"to {output_file}:\n{result.stderr}"
-            )
-            raise RuntimeError(msg)
+            if result.returncode != 0:
+                msg = (
+                    f"Failed to export group '{node.id}' ({node.label}) "
+                    f"to {output_file}:\n{result.stderr}"
+                )
+                raise RuntimeError(msg)
+        else:
+            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, etc.)
+            # Step 1: Extract isolated SVG sub-tree to avoid processing the full master document in Python extensions
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                tmp_svg_path = Path(tmp_svg.name)
+
+            try:
+                extract_cmd = [
+                    inkscape_path,
+                    str(svg_file),
+                    f"--export-id={node.id}",
+                    "--export-id-only",
+                    "--export-plain-svg",
+                    f"--export-filename={tmp_svg_path}",
+                ]
+                if verbose:
+                    print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
+                extract_res = subprocess.run(
+                    extract_cmd, capture_output=True, text=True, check=False
+                )
+                if extract_res.returncode != 0:
+                    msg = (
+                        f"Failed to isolate group '{node.id}' ({node.label}) "
+                        f"to temporary SVG:\n{extract_res.stderr}"
+                    )
+                    raise RuntimeError(msg)
+
+                # Step 2: Convert isolated SVG to target format
+                convert_cmd = [
+                    inkscape_path,
+                    str(tmp_svg_path),
+                    f"--export-filename={output_file}",
+                ]
+                if verbose:
+                    print(f"[VERBOSE] Converting isolated SVG: {' '.join(convert_cmd)}")
+                convert_res = subprocess.run(
+                    convert_cmd, capture_output=True, text=True, check=False
+                )
+                if verbose and convert_res.stdout:
+                    print(convert_res.stdout)
+                if verbose and convert_res.stderr:
+                    print(convert_res.stderr, file=sys.stderr)
+
+                if convert_res.returncode != 0:
+                    msg = (
+                        f"Failed to export isolated group '{node.id}' ({node.label}) "
+                        f"to {output_file}:\n{convert_res.stderr}"
+                    )
+                    raise RuntimeError(msg)
+            finally:
+                if tmp_svg_path.exists():
+                    tmp_svg_path.unlink()
 
     if verbose or dry_run:
         prefix = "[DRY-RUN] Would export" if dry_run else "Exported"
