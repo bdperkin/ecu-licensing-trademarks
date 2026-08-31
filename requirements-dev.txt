@@ -1,4 +1,4 @@
 -r requirements.txt
-pip-audit>=2.7.0
+pip-audit>=2.10.1
 pre-commit>=3.0.0
 ruff>=0.6.0
