@@ -12,7 +12,6 @@ EC
 ee
 ent
 ersit
-ersities
 eview
 evision
 ficial
@@ -21,17 +20,13 @@ Greenville
 ligh
 Minges
 NC
-oid
 OLCP
 olor
 olors
-ombina
 omotional
-onfusion
 ound
 palett
 PANTONE
 SPC
 subjec
 tes
-tions
