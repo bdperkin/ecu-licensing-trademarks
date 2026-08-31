@@ -1,6 +1,6 @@
-# Source Assets (`src/`)
+# Source Vector Assets (`src/`)
 
-This directory contains the curated, normalized, and strictly validated production source vector and raster assets for the East Carolina University Trademark Licensing Art Sheet.
+This directory contains the curated, normalized, and strictly validated master source vector assets (Inkscape SVG) for the East Carolina University Trademark Licensing Art Sheet.
 
 ---
 
@@ -8,16 +8,16 @@ This directory contains the curated, normalized, and strictly validated producti
 
 ```text
 src/
+├── README.md                        # Documentation for source vector assets
 └── art-sheet-5-8-23/
-    ├── 2023-05-08-art-sheet-01.svg   # Production 3-page master vector art sheet (Inkscape SVG)
-    └── 2023-05-08-art-sheet-01.png   # High-resolution raster render (229.33 DPI)
+    └── 2023-05-08-art-sheet-01.svg  # Master 3-page vector art sheet (Inkscape SVG)
 ```
 
 ---
 
-## Production Asset Details
+## Production Vector Asset Details
 
-### 1. Master Vector Art Sheet ([`2023-05-08-art-sheet-01.svg`](art-sheet-5-8-23/2023-05-08-art-sheet-01.svg))
+### Master Vector Art Sheet ([`2023-05-08-art-sheet-01.svg`](art-sheet-5-8-23/2023-05-08-art-sheet-01.svg))
 
 The master vector asset is a 3-page consolidated canvas containing all 91 official university marks, approved verbiage, color swatches, typography, and licensing footnotes:
 
@@ -26,9 +26,8 @@ The master vector asset is a 3-page consolidated canvas containing all 91 offici
 - **Label Uniqueness**: **100% Globally Unique** (`1,045` distinct label names; `0` duplicate names).
 - **Structural Integrity**: Zero empty groups, zero single-object wrapper groups, and zero stranded canvas-root elements.
 
-### 2. High-Resolution Raster Render ([`2023-05-08-art-sheet-01.png`](art-sheet-5-8-23/2023-05-08-art-sheet-01.png))
-
-Exported directly from the master vector SVG at 229.33 DPI, providing a high-fidelity visual reference of the complete 3-page art sheet layout.
+> [!NOTE]
+> High-resolution raster renders (PNG) generated from this SVG are stored in [`fmt/png/`](../fmt/png/). See [`fmt/README.md`](../fmt/README.md) for details.
 
 ---
 

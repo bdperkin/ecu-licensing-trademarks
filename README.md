@@ -20,11 +20,15 @@ Comprehensive repository containing normalized vector SVG assets, reference publ
 
 ```text
 .
-├── src/                                     # Curated, strictly validated production assets
-│   ├── README.md                            # Documentation for production assets
+├── src/                                     # Curated, strictly validated master vector assets
+│   ├── README.md                            # Documentation for vector source assets
 │   └── art-sheet-5-8-23/
-│       ├── 2023-05-08-art-sheet-01.svg      # Master 3-page vector art sheet (Inkscape SVG)
-│       └── 2023-05-08-art-sheet-01.png      # High-resolution raster render (229.33 DPI)
+│       └── 2023-05-08-art-sheet-01.svg      # Master 3-page vector art sheet (Inkscape SVG)
+├── fmt/                                     # Formatted and rendered export assets
+│   ├── README.md                            # Documentation for formatted assets
+│   └── png/                                 # Raster PNG image exports
+│       └── art-sheet-5-8-23/
+│           └── 2023-05-08-art-sheet-01.png  # High-resolution raster render (229.33 DPI)
 ├── tools/                                   # Automated quality assurance suite
 │   ├── README.md                            # Documentation for audit tools and testing
 │   ├── audit_svg.py                         # 8-check automated SVG structure & label audit tool

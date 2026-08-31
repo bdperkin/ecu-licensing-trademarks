@@ -114,7 +114,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Expand `tools/audit_svg.py` to 8 automated checks (adding label formatting, numbered marks sequence/indicator validation, and canvas-root stranded element checks)
   - [x] Configure `.pre-commit-config.yaml` and GitHub Actions CI workflow (`.github/workflows/ci.yml`) to automatically audit the SVG on commits and pull requests
-  - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
+  - [x] Export high-resolution PNG render (`fmt/png/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
 ---
