@@ -59,7 +59,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          python3 -m unittest tools/test_audit_svg.py
+          python3 -m unittest discover -s tools
 
   security-scan:
     name: Security Vulnerability Scan (pip-audit)

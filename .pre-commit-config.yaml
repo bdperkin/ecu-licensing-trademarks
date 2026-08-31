@@ -4,7 +4,7 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [audit-svg, test-audit-tool]
+  skip: [audit-svg, test-tools]
   submodules: false
 
 repos:
@@ -43,9 +43,9 @@ repos:
         files: ^(src/.*\.svg|tools/.*)$
         pass_filenames: false
 
-      - id: test-audit-tool
-        name: Run Audit Tool Unit Tests
-        entry: python3 -m unittest tools/test_audit_svg.py
+      - id: test-tools
+        name: Run Tools Unit Tests
+        entry: python3 -m unittest discover -s tools
         language: system
         files: ^tools/.*\.py$
         pass_filenames: false
