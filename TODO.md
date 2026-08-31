@@ -107,6 +107,7 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Adopt uniform `Mark N` prefixes across all 91 marks (`Mark 1` through `Mark 91`)
   - [x] Standardize background layer wrapping and numbering (`[N] Background`) across all marks (Marks 15–20, 52, 55, 84, 87)
   - [x] Complete letter and symbol path labeling across all word mark variants (Primary 8–14, Secondary 15–21, Additional 22–35)
+  - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Export high-resolution PNG render (`src/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
   - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
 
@@ -118,7 +119,5 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Eliminate `22 A`–`33 A` (10 duplicate ignore entries) by differentiating `[N] East A` vs `[N] Carolina 1st/2nd A` in Additional Word Marks
   - [x] Eliminate `PeeDee the Pirate` and `Pirates` (2 duplicate ignore entries) by adding `Information` suffix in Information Section
   - [ ] (Optional) Prefix font glyphs in Marks 60–62 with font names (`Matrix A` vs `Gotham A`) to completely eliminate all 26 remaining duplicate ignore entries
-- [ ] **Mark 90 Note Label Alignment**
-  - [ ] Rename generic `Note` in Mark 90 to `ECU Health Note` or `Mark 90 Note` to align with `No Quarter Note` (Mark 59) and `University Seal Note` (Mark 91)
 - [ ] **Continuous Integration & Pre-commit Hooks**
   - [ ] Configure `.pre-commit-config.yaml` or CI workflow to automatically run `python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -s` on commits and pull requests
