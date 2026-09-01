@@ -114,11 +114,15 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Expand `tools/audit_svg.py` to 8 automated checks (adding label formatting, numbered marks sequence/indicator validation, and canvas-root stranded element checks)
   - [x] Configure `.pre-commit-config.yaml` and GitHub Actions CI workflow (`.github/workflows/ci.yml`) to automatically audit the SVG on commits and pull requests
-  - [x] Export high-resolution PNG render (`fmt/png/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
-  - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
+  - [x] Develop `tools/export_svg_groups.py` with multi-tier export pipeline (native C++, ImageMagick raster conversion, Python tar/zip/svgz archives, and layer-annotated XAML)
+  - [x] Implement configurable subprocess timeout (`--timeout`), post-export file verification, and ImageMagick sanity checking
+  - [x] Build comprehensive unit test suite in `tools/test_export_svg_groups.py` (33 unit tests passing)
+  - [x] Integrate Astral toolchain (`uv`, `ruff`, `ty`) across development, packaging (`pyproject.toml`, `uv.lock`), 14 pre-commit hooks (`ty-check`), and CI matrix workflows
+  - [x] Export full document and all 91 marks across PNG, SVG, JPG, and WebP formats into `fmt/`
+  - [x] Add `.gitignore` ignoring non-primary intermediate export formats in `fmt/` and environment caches
 
 ---
 
 ### 2. Remaining / Optimization Opportunities
 
-*All identified tasks, structural reviews, optimizations, and CI integrations have been completed.*
+*All identified tasks, structural reviews, export tooling, Astral quality integrations, and CI workflows have been completed.*

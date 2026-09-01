@@ -19,6 +19,7 @@ fmt/sif
 fmt/svgz
 fmt/tar
 fmt/tex
+fmt/tiff
 fmt/wmf
 fmt/xaml
 fmt/xcf
