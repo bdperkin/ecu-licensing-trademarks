@@ -26,6 +26,7 @@ from lxml import etree
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
 DEFAULT_TIMEOUT = 120.0
+DEFAULT_MARGIN = 20.0
 
 ARCHIVE_FORMATS = {"tar", "zip", "svgz"}
 
@@ -389,6 +390,80 @@ def remove_mark_number_indicators(
     return output_path
 
 
+def add_margin_to_svg(svg_path: Path, margin: float) -> None:
+    """Adjust the viewBox and width/height of an SVG document to add canvas margin on all sides.
+
+    If margin <= 0, no changes are made.
+    """
+    if margin <= 0 or not svg_path.exists():
+        return
+
+    try:
+        tree = etree.parse(str(svg_path))
+        root = tree.getroot()
+        vb = root.get("viewBox")
+        if vb:
+            parts = [float(v) for v in vb.split()]
+            if len(parts) == 4:
+                min_x, min_y, w, h = parts
+                new_vb = f"{min_x - margin} {min_y - margin} {w + 2 * margin} {h + 2 * margin}"
+                root.set("viewBox", new_vb)
+
+                width_attr = root.get("width")
+                if width_attr:
+                    try:
+                        orig_w = float(re.sub(r"[^\d.]", "", width_attr))
+                        root.set("width", str(orig_w + 2 * margin))
+                    except ValueError:
+                        pass
+
+                height_attr = root.get("height")
+                if height_attr:
+                    try:
+                        orig_h = float(re.sub(r"[^\d.]", "", height_attr))
+                        root.set("height", str(orig_h + 2 * margin))
+                    except ValueError:
+                        pass
+
+                tree.write(str(svg_path), encoding="utf-8", xml_declaration=True)
+    except Exception:
+        pass
+
+
+def get_element_bounding_boxes(
+    svg_path: Path, timeout: float = DEFAULT_TIMEOUT
+) -> dict[str, tuple[float, float, float, float]]:
+    """Query element bounding boxes from Inkscape for all elements in the SVG document.
+
+    Returns a mapping of element ID to (x, y, width, height) in SVG user coordinates.
+    """
+    inkscape_path = shutil.which("inkscape")
+    if not inkscape_path or not svg_path.exists():
+        return {}
+
+    try:
+        res = subprocess.run(
+            [inkscape_path, "--query-all", str(svg_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+        if res.returncode == 0 and res.stdout:
+            bbox_map: dict[str, tuple[float, float, float, float]] = {}
+            for line in res.stdout.splitlines():
+                parts = line.split(",")
+                if len(parts) == 5:
+                    eid, x, y, w, h = parts
+                    with contextlib.suppress(ValueError):
+                        bbox_map[eid] = (float(x), float(y), float(w), float(h))
+            return bbox_map
+    except (subprocess.SubprocessError, OSError):
+        pass
+
+    return {}
+
+
 def export_group(
     svg_file: Path,
     node: GroupNode,
@@ -399,6 +474,8 @@ def export_group(
     dry_run: bool = False,
     verbose: bool = False,
     no_mark_numbers: bool = False,
+    margin: float = DEFAULT_MARGIN,
+    bbox_cache: dict[str, tuple[float, float, float, float]] | None = None,
 ) -> Path:
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
@@ -429,6 +506,38 @@ def export_group(
             if verbose:
                 print(f"[VERBOSE] Removed mark number indicator for [{node.id}] '{node.label}'")
 
+        # Calculate bounding box with margin if margin > 0
+        area_arg: str | None = None
+        if margin > 0:
+            bbox = (bbox_cache or {}).get(node.id)
+            if not bbox and inkscape_path:
+                try:
+                    q_res = subprocess.run(
+                        [
+                            inkscape_path,
+                            f"--query-id={node.id}",
+                            "-X",
+                            "-Y",
+                            "-W",
+                            "-H",
+                            str(active_svg),
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                    if q_res.returncode == 0 and q_res.stdout.strip():
+                        q_vals = [float(v) for v in q_res.stdout.strip().splitlines() if v.strip()]
+                        if len(q_vals) == 4:
+                            bbox = (q_vals[0], q_vals[1], q_vals[2], q_vals[3])
+                except Exception:
+                    pass
+
+            if bbox:
+                bx, by, bw, bh = bbox
+                area_arg = f"{bx - margin}:{by - margin}:{bx + bw + margin}:{by + bh + margin}"
+
         try:
             if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
                 # Native C++ direct export
@@ -444,6 +553,9 @@ def export_group(
                     cmd.append("--export-plain-svg")
                 elif fmt_clean == "png":
                     cmd.append(f"--export-dpi={dpi}")
+
+                if fmt_clean in ("png", "pdf", "eps", "ps") and area_arg:
+                    cmd.append(f"--export-area={area_arg}")
 
                 if verbose:
                     print(f"[VERBOSE] Running: {' '.join(cmd)}")
@@ -475,6 +587,9 @@ def export_group(
                     )
                     raise RuntimeError(msg)
 
+                if fmt_clean == "svg" and margin > 0:
+                    add_margin_to_svg(output_file, margin)
+
             elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
                 # High-fidelity raster pipeline: Render isolated PNG with Cairo -> Convert via ImageMagick
                 with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
@@ -489,6 +604,9 @@ def export_group(
                         f"--export-dpi={dpi}",
                         f"--export-filename={tmp_png_path}",
                     ]
+                    if area_arg:
+                        render_cmd.append(f"--export-area={area_arg}")
+
                     if verbose:
                         print(f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}")
 
@@ -585,6 +703,9 @@ def export_group(
                         )
                         raise RuntimeError(msg)
 
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
+
                     if fmt_clean == "tar":
                         with tarfile.open(output_file, "w") as tar:
                             tar.add(tmp_svg_path, arcname=f"{leaf_name}.svg")
@@ -643,6 +764,9 @@ def export_group(
                             f"to temporary SVG:\n{extract_res.stderr}"
                         )
                         raise RuntimeError(msg)
+
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
 
                     # Step 1.5: If format is XAML, annotate the isolated group with inkscape:groupmode="layer"
                     if fmt_clean == "xaml":
@@ -713,6 +837,7 @@ def export_full_document(
     dry_run: bool = False,
     verbose: bool = False,
     no_mark_numbers: bool = False,
+    margin: float = DEFAULT_MARGIN,
 ) -> Path:
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
@@ -738,6 +863,20 @@ def export_full_document(
             if verbose:
                 print("[VERBOSE] Removed mark number indicators from full document")
 
+        # Calculate document bounding area with margin if margin > 0
+        area_arg: str | None = None
+        if margin > 0:
+            try:
+                doc_tree = etree.parse(str(active_svg))
+                vb = doc_tree.getroot().get("viewBox")
+                if vb:
+                    parts = [float(v) for v in vb.split()]
+                    if len(parts) == 4:
+                        min_x, min_y, w, h = parts
+                        area_arg = f"{min_x - margin}:{min_y - margin}:{min_x + w + margin}:{min_y + h + margin}"
+            except Exception:
+                pass
+
         try:
             if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
                 cmd = [
@@ -750,6 +889,9 @@ def export_full_document(
                     cmd.append("--export-plain-svg")
                 elif fmt_clean == "png":
                     cmd.append(f"--export-dpi={dpi}")
+
+                if fmt_clean in ("png", "pdf", "eps", "ps") and area_arg:
+                    cmd.append(f"--export-area={area_arg}")
 
                 if verbose:
                     print(f"[VERBOSE] Running: {' '.join(cmd)}")
@@ -781,6 +923,9 @@ def export_full_document(
                     )
                     raise RuntimeError(msg)
 
+                if fmt_clean == "svg" and margin > 0:
+                    add_margin_to_svg(output_file, margin)
+
             elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
                 # High-fidelity raster pipeline for full document
                 with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
@@ -793,6 +938,9 @@ def export_full_document(
                         f"--export-dpi={dpi}",
                         f"--export-filename={tmp_png_path}",
                     ]
+                    if area_arg:
+                        render_cmd.append(f"--export-area={area_arg}")
+
                     if verbose:
                         print(f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}")
 
@@ -848,15 +996,33 @@ def export_full_document(
                         tmp_png_path.unlink()
 
             elif fmt_clean in ARCHIVE_FORMATS:
-                if fmt_clean == "tar":
-                    with tarfile.open(output_file, "w") as tar:
-                        tar.add(active_svg, arcname=f"{svg_file.stem}.svg")
-                elif fmt_clean == "zip":
-                    with zipfile.ZipFile(output_file, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                        zf.write(active_svg, arcname=f"{svg_file.stem}.svg")
-                elif fmt_clean == "svgz":
-                    with active_svg.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
-                        f_out.writelines(f_in)
+                archive_source_svg = active_svg
+                tmp_margin_svg: Path | None = None
+                if margin > 0:
+                    with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                        tmp_margin_svg = Path(tmp_svg.name)
+                    shutil.copy2(active_svg, tmp_margin_svg)
+                    add_margin_to_svg(tmp_margin_svg, margin)
+                    archive_source_svg = tmp_margin_svg
+
+                try:
+                    if fmt_clean == "tar":
+                        with tarfile.open(output_file, "w") as tar:
+                            tar.add(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                    elif fmt_clean == "zip":
+                        with zipfile.ZipFile(
+                            output_file, "w", compression=zipfile.ZIP_DEFLATED
+                        ) as zf:
+                            zf.write(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                    elif fmt_clean == "svgz":
+                        with (
+                            archive_source_svg.open("rb") as f_in,
+                            gzip.open(output_file, "wb") as f_out,
+                        ):
+                            f_out.writelines(f_in)
+                finally:
+                    if tmp_margin_svg and tmp_margin_svg.exists():
+                        tmp_margin_svg.unlink(missing_ok=True)
 
             elif fmt_clean == "xaml":
                 # XAML extension requires layers for resources; annotate copy of document
@@ -865,6 +1031,9 @@ def export_full_document(
                 try:
                     shutil.copy2(active_svg, tmp_svg_path)
                     annotate_svg_layers(tmp_svg_path, default_label=svg_file.stem)
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
+
                     cmd = [
                         inkscape_path,
                         str(tmp_svg_path),
@@ -1050,6 +1219,14 @@ Examples:
         help="Target output base directory. Defaults to the current working directory.",
     )
     parser.add_argument(
+        "-m",
+        "--margin",
+        "--padding",
+        type=float,
+        default=DEFAULT_MARGIN,
+        help=f"Canvas margin/padding in pixels to add around export bounds on all sides (default: {DEFAULT_MARGIN}, use 0 for no margin).",
+    )
+    parser.add_argument(
         "--no-mark-numbers",
         "--hide-mark-numbers",
         "--no-mark-indicators",
@@ -1146,6 +1323,7 @@ def main(argv: list[str] | None = None) -> int:
                 dry_run=args.dry_run,
                 verbose=args.verbose,
                 no_mark_numbers=args.no_mark_numbers,
+                margin=args.margin,
             )
             action_label = "Would export" if args.dry_run else "Successfully exported"
             print(f"{action_label} full document as '{fmt.lower()}'.")
@@ -1194,6 +1372,11 @@ def main(argv: list[str] | None = None) -> int:
         cleaned_temp_svg = remove_mark_number_indicators(args.svg_file)
         source_svg = cleaned_temp_svg
 
+    # Pre-cache element bounding boxes if margin is requested
+    bbox_cache: dict[str, tuple[float, float, float, float]] | None = None
+    if args.margin > 0 and not args.dry_run:
+        bbox_cache = get_element_bounding_boxes(source_svg, timeout=args.timeout)
+
     exported_count = 0
     try:
         for node in targets:
@@ -1208,6 +1391,8 @@ def main(argv: list[str] | None = None) -> int:
                     dry_run=args.dry_run,
                     verbose=args.verbose,
                     no_mark_numbers=False,
+                    margin=args.margin,
+                    bbox_cache=bbox_cache,
                 )
                 exported_count += 1
             except Exception as e:

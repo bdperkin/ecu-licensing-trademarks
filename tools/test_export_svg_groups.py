@@ -13,8 +13,12 @@ from pathlib import Path
 from lxml import etree
 
 from tools.export_svg_groups import (
+    DEFAULT_MARGIN,
     INKSCAPE_NS,
+    add_margin_to_svg,
+    build_parser,
     filter_groups,
+    get_element_bounding_boxes,
     get_supported_formats,
     main,
     normalize_slug,
@@ -567,6 +571,97 @@ class TestExportSvgGroups(unittest.TestCase):
             # Artwork elements '45 Background' (g4500001) and '45 Mark' (g4500007) must be present
             self.assertIn("g4500001", elem_ids)
             self.assertIn("g4500007", elem_ids)
+
+    def test_add_margin_to_svg(self) -> None:
+        """Test add_margin_to_svg viewBox and dimension expansion."""
+        svg_content = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100px" height="200px" '
+            'viewBox="0 0 100 200"><rect x="0" y="0" width="100" height="200"/></svg>'
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir) / "test.svg"
+            p.write_text(svg_content)
+
+            # Test positive margin
+            add_margin_to_svg(p, 20.0)
+            tree = etree.parse(str(p))
+            root = tree.getroot()
+            self.assertEqual(root.get("viewBox"), "-20.0 -20.0 140.0 240.0")
+            self.assertEqual(root.get("width"), "140.0")
+            self.assertEqual(root.get("height"), "240.0")
+
+            # Test zero or negative margin leaves file unchanged
+            add_margin_to_svg(p, 0.0)
+            tree0 = etree.parse(str(p))
+            self.assertEqual(tree0.getroot().get("viewBox"), "-20.0 -20.0 140.0 240.0")
+
+    def test_get_element_bounding_boxes(self) -> None:
+        """Test get_element_bounding_boxes returns parsed element coordinates."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        bbox_map = get_element_bounding_boxes(SAMPLE_SVG)
+        self.assertIsInstance(bbox_map, dict)
+        self.assertGreater(len(bbox_map), 0)
+        self.assertIn("g0500000", bbox_map)
+        _x, _y, w, h = bbox_map["g0500000"]
+        self.assertGreater(w, 0)
+        self.assertGreater(h, 0)
+
+    def test_build_parser_margin_options(self) -> None:
+        """Test CLI argument parser margin options."""
+        parser = build_parser()
+
+        # Default margin
+        args = parser.parse_args(["src/dummy.svg"])
+        self.assertEqual(args.margin, DEFAULT_MARGIN)
+        self.assertEqual(args.margin, 20.0)
+
+        # Explicit --margin
+        args = parser.parse_args(["src/dummy.svg", "--margin", "15.5"])
+        self.assertEqual(args.margin, 15.5)
+
+        # Explicit -m
+        args = parser.parse_args(["src/dummy.svg", "-m", "0"])
+        self.assertEqual(args.margin, 0.0)
+
+        # Explicit --padding
+        args = parser.parse_args(["src/dummy.svg", "--padding", "30"])
+        self.assertEqual(args.margin, 30.0)
+
+    def test_cli_export_with_margin(self) -> None:
+        """Test CLI export with custom margin creates expanded SVG canvas."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--pattern",
+                        "^Mark 5$",
+                        "--format",
+                        "svg",
+                        "--margin",
+                        "25.0",
+                        "--output-dir",
+                        str(out_path),
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+
+            exported_file = out_path / "fmt" / "svg" / "primary-mark" / "mark-5.svg"
+            self.assertTrue(exported_file.exists())
+            tree = etree.parse(str(exported_file))
+            vb = tree.getroot().get("viewBox")
+            self.assertIsNotNone(vb)
+            assert vb is not None
+            parts = [float(v) for v in vb.split()]
+            self.assertEqual(parts[0], -25.0)
+            self.assertEqual(parts[1], -25.0)
 
 
 if __name__ == "__main__":
