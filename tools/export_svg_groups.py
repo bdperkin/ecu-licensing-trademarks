@@ -26,6 +26,7 @@ from lxml import etree
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
 DEFAULT_TIMEOUT = 120.0
+DEFAULT_MARGIN = 20.0
 
 ARCHIVE_FORMATS = {"tar", "zip", "svgz"}
 
@@ -341,6 +342,128 @@ def annotate_svg_layers(svg_path: Path, default_label: str = "Layer") -> None:
         tree.write(str(svg_path), encoding="utf-8", xml_declaration=True)
 
 
+def remove_mark_number_indicators(
+    svg_path: Path,
+    output_path: Path | None = None,
+    target_group_id: str | None = None,
+) -> Path:
+    """Remove child number indicator groups (e.g. child group labeled '45' from 'Mark 45') from an SVG document.
+
+    If target_group_id is provided, only the indicator child of that specific group is removed.
+    Otherwise, indicator children of all 'Mark <N>' groups across the SVG are removed.
+    """
+    tree = etree.parse(str(svg_path))
+    root = tree.getroot()
+    inkscape_label_attr = f"{{{INKSCAPE_NS}}}label"
+
+    removals: list[tuple[etree._Element, etree._Element]] = []
+    for elem in list(root.iter()):
+        tag = str(elem.tag).rpartition("}")[2] if "}" in str(elem.tag) else str(elem.tag)
+        if tag != "g":
+            continue
+
+        label = elem.get(inkscape_label_attr)
+        if not label:
+            continue
+
+        m = re.match(r"^Mark\s+(\d+)$", label.strip(), re.IGNORECASE)
+        if not m:
+            continue
+
+        if target_group_id is not None and elem.get("id") != target_group_id:
+            continue
+
+        num_str = m.group(1)
+        for child in list(elem):
+            child_label = child.get(inkscape_label_attr)
+            if child_label == num_str:
+                removals.append((elem, child))
+
+    for parent, child in removals:
+        parent.remove(child)
+
+    if output_path is None:
+        with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+            output_path = Path(tmp_svg.name)
+
+    tree.write(str(output_path), encoding="utf-8", xml_declaration=True)
+    return output_path
+
+
+def add_margin_to_svg(svg_path: Path, margin: float) -> None:
+    """Adjust the viewBox and width/height of an SVG document to add canvas margin on all sides.
+
+    If margin <= 0, no changes are made.
+    """
+    if margin <= 0 or not svg_path.exists():
+        return
+
+    try:
+        tree = etree.parse(str(svg_path))
+        root = tree.getroot()
+        vb = root.get("viewBox")
+        if vb:
+            parts = [float(v) for v in vb.split()]
+            if len(parts) == 4:
+                min_x, min_y, w, h = parts
+                new_vb = f"{min_x - margin} {min_y - margin} {w + 2 * margin} {h + 2 * margin}"
+                root.set("viewBox", new_vb)
+
+                width_attr = root.get("width")
+                if width_attr:
+                    try:
+                        orig_w = float(re.sub(r"[^\d.]", "", width_attr))
+                        root.set("width", str(orig_w + 2 * margin))
+                    except ValueError:
+                        pass
+
+                height_attr = root.get("height")
+                if height_attr:
+                    try:
+                        orig_h = float(re.sub(r"[^\d.]", "", height_attr))
+                        root.set("height", str(orig_h + 2 * margin))
+                    except ValueError:
+                        pass
+
+                tree.write(str(svg_path), encoding="utf-8", xml_declaration=True)
+    except Exception:
+        pass
+
+
+def get_element_bounding_boxes(
+    svg_path: Path, timeout: float = DEFAULT_TIMEOUT
+) -> dict[str, tuple[float, float, float, float]]:
+    """Query element bounding boxes from Inkscape for all elements in the SVG document.
+
+    Returns a mapping of element ID to (x, y, width, height) in SVG user coordinates.
+    """
+    inkscape_path = shutil.which("inkscape")
+    if not inkscape_path or not svg_path.exists():
+        return {}
+
+    try:
+        res = subprocess.run(
+            [inkscape_path, "--query-all", str(svg_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+        if res.returncode == 0 and res.stdout:
+            bbox_map: dict[str, tuple[float, float, float, float]] = {}
+            for line in res.stdout.splitlines():
+                parts = line.split(",")
+                if len(parts) == 5:
+                    eid, x, y, w, h = parts
+                    with contextlib.suppress(ValueError):
+                        bbox_map[eid] = (float(x), float(y), float(w), float(h))
+            return bbox_map
+    except (subprocess.SubprocessError, OSError):
+        pass
+
+    return {}
+
+
 def export_group(
     svg_file: Path,
     node: GroupNode,
@@ -350,6 +473,9 @@ def export_group(
     timeout: float = DEFAULT_TIMEOUT,
     dry_run: bool = False,
     verbose: bool = False,
+    no_mark_numbers: bool = False,
+    margin: float = DEFAULT_MARGIN,
+    bbox_cache: dict[str, tuple[float, float, float, float]] | None = None,
 ) -> Path:
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
@@ -372,234 +498,71 @@ def export_group(
         magick_path = shutil.which("magick") or shutil.which("convert")
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
-            # Native C++ direct export
-            cmd = [
-                inkscape_path,
-                str(svg_file),
-                f"--export-id={node.id}",
-                "--export-id-only",
-                f"--export-filename={output_file}",
-            ]
-
-            if fmt_clean == "svg":
-                cmd.append("--export-plain-svg")
-            elif fmt_clean == "png":
-                cmd.append(f"--export-dpi={dpi}")
-
+        active_svg = svg_file
+        tmp_cleaned_svg: Path | None = None
+        if no_mark_numbers:
+            tmp_cleaned_svg = remove_mark_number_indicators(svg_file, target_group_id=node.id)
+            active_svg = tmp_cleaned_svg
             if verbose:
-                print(f"[VERBOSE] Running: {' '.join(cmd)}")
+                print(f"[VERBOSE] Removed mark number indicator for [{node.id}] '{node.label}'")
 
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=timeout,
-                )
-            except subprocess.TimeoutExpired as e:
-                msg = (
-                    f"Export of group '{node.id}' ({node.label}) timed out "
-                    f"after {timeout} seconds: {' '.join(cmd)}"
-                )
-                raise RuntimeError(msg) from e
+        # Calculate bounding box with margin if margin > 0
+        area_arg: str | None = None
+        if margin > 0:
+            bbox = (bbox_cache or {}).get(node.id)
+            if not bbox and inkscape_path:
+                try:
+                    q_res = subprocess.run(
+                        [
+                            inkscape_path,
+                            f"--query-id={node.id}",
+                            "-X",
+                            "-Y",
+                            "-W",
+                            "-H",
+                            str(active_svg),
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                    if q_res.returncode == 0 and q_res.stdout.strip():
+                        q_vals = [float(v) for v in q_res.stdout.strip().splitlines() if v.strip()]
+                        if len(q_vals) == 4:
+                            bbox = (q_vals[0], q_vals[1], q_vals[2], q_vals[3])
+                except Exception:
+                    pass
 
-            if verbose and result.stdout:
-                print(result.stdout)
-            if verbose and result.stderr:
-                print(result.stderr, file=sys.stderr)
+            if bbox:
+                bx, by, bw, bh = bbox
+                area_arg = f"{bx - margin}:{by - margin}:{bx + bw + margin}:{by + bh + margin}"
 
-            if result.returncode != 0:
-                msg = (
-                    f"Failed to export group '{node.id}' ({node.label}) "
-                    f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
-                )
-                raise RuntimeError(msg)
-
-        elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
-            # High-fidelity raster pipeline: Render isolated PNG with Cairo -> Convert via ImageMagick
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
-                tmp_png_path = Path(tmp_png.name)
-
-            try:
-                render_cmd = [
+        try:
+            if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
+                # Native C++ direct export
+                cmd = [
                     inkscape_path,
-                    str(svg_file),
+                    str(active_svg),
                     f"--export-id={node.id}",
                     "--export-id-only",
-                    f"--export-dpi={dpi}",
-                    f"--export-filename={tmp_png_path}",
-                ]
-                if verbose:
-                    print(f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}")
-
-                try:
-                    render_res = subprocess.run(
-                        render_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"Raster render of group '{node.id}' ({node.label}) timed out "
-                        f"after {timeout} seconds: {' '.join(render_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if (
-                    render_res.returncode != 0
-                    or not tmp_png_path.exists()
-                    or tmp_png_path.stat().st_size == 0
-                ):
-                    msg = f"Failed to render intermediate PNG for group '{node.id}' ({node.label}):\n{render_res.stderr}"
-                    raise RuntimeError(msg)
-
-                # Convert PNG to target raster format via ImageMagick
-                convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
-                if verbose:
-                    print(f"[VERBOSE] Converting raster image: {' '.join(convert_cmd)}")
-
-                try:
-                    conv_res = subprocess.run(
-                        convert_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"ImageMagick conversion of '{node.id}' timed out "
-                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if conv_res.returncode != 0:
-                    msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
-                    raise RuntimeError(msg)
-            finally:
-                if tmp_png_path.exists():
-                    tmp_png_path.unlink()
-
-        elif fmt_clean in ARCHIVE_FORMATS:
-            # Package isolated SVG into archive
-            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
-                tmp_svg_path = Path(tmp_svg.name)
-
-            try:
-                extract_cmd = [
-                    inkscape_path,
-                    str(svg_file),
-                    f"--export-id={node.id}",
-                    "--export-id-only",
-                    "--export-plain-svg",
-                    f"--export-filename={tmp_svg_path}",
-                ]
-                if verbose:
-                    print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
-
-                try:
-                    extract_res = subprocess.run(
-                        extract_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"Isolation of group '{node.id}' ({node.label}) timed out "
-                        f"after {timeout} seconds: {' '.join(extract_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if (
-                    extract_res.returncode != 0
-                    or not tmp_svg_path.exists()
-                    or tmp_svg_path.stat().st_size == 0
-                ):
-                    msg = (
-                        f"Failed to isolate group '{node.id}' ({node.label}) "
-                        f"to temporary SVG:\n{extract_res.stderr}"
-                    )
-                    raise RuntimeError(msg)
-
-                if fmt_clean == "tar":
-                    with tarfile.open(output_file, "w") as tar:
-                        tar.add(tmp_svg_path, arcname=f"{leaf_name}.svg")
-                elif fmt_clean == "zip":
-                    with zipfile.ZipFile(output_file, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                        zf.write(tmp_svg_path, arcname=f"{leaf_name}.svg")
-                elif fmt_clean == "svgz":
-                    with tmp_svg_path.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
-                        f_out.writelines(f_in)
-            finally:
-                if tmp_svg_path.exists():
-                    tmp_svg_path.unlink()
-
-        else:
-            # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, etc.)
-            # Step 1: Extract isolated SVG sub-tree
-            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
-                tmp_svg_path = Path(tmp_svg.name)
-
-            try:
-                extract_cmd = [
-                    inkscape_path,
-                    str(svg_file),
-                    f"--export-id={node.id}",
-                    "--export-id-only",
-                    "--export-plain-svg",
-                    f"--export-filename={tmp_svg_path}",
-                ]
-                if verbose:
-                    print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
-
-                try:
-                    extract_res = subprocess.run(
-                        extract_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"Isolation of group '{node.id}' ({node.label}) timed out "
-                        f"after {timeout} seconds: {' '.join(extract_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if (
-                    extract_res.returncode != 0
-                    or not tmp_svg_path.exists()
-                    or tmp_svg_path.stat().st_size == 0
-                ):
-                    msg = (
-                        f"Failed to isolate group '{node.id}' ({node.label}) "
-                        f"to temporary SVG:\n{extract_res.stderr}"
-                    )
-                    raise RuntimeError(msg)
-
-                # Annotate top-level group as layer for layer-aware extensions (e.g. XAML)
-                if fmt_clean == "xaml":
-                    annotate_svg_layers(tmp_svg_path, default_label=node.label or node.id)
-
-                # Step 2: Convert isolated SVG to target format
-                convert_cmd = [
-                    inkscape_path,
-                    str(tmp_svg_path),
                     f"--export-filename={output_file}",
                 ]
+
+                if fmt_clean == "svg":
+                    cmd.append("--export-plain-svg")
+                elif fmt_clean == "png":
+                    cmd.append(f"--export-dpi={dpi}")
+
+                if fmt_clean in ("png", "pdf", "eps", "ps") and area_arg:
+                    cmd.append(f"--export-area={area_arg}")
+
                 if verbose:
-                    print(f"[VERBOSE] Converting isolated SVG: {' '.join(convert_cmd)}")
+                    print(f"[VERBOSE] Running: {' '.join(cmd)}")
 
                 try:
-                    convert_res = subprocess.run(
-                        convert_cmd,
+                    result = subprocess.run(
+                        cmd,
                         capture_output=True,
                         text=True,
                         check=False,
@@ -607,29 +570,253 @@ def export_group(
                     )
                 except subprocess.TimeoutExpired as e:
                     msg = (
-                        f"Conversion of isolated group '{node.id}' ({node.label}) timed out "
-                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                        f"Export of group '{node.id}' ({node.label}) timed out "
+                        f"after {timeout} seconds: {' '.join(cmd)}"
                     )
                     raise RuntimeError(msg) from e
 
-                if verbose and convert_res.stdout:
-                    print(convert_res.stdout)
-                if verbose and convert_res.stderr:
-                    print(convert_res.stderr, file=sys.stderr)
+                if verbose and result.stdout:
+                    print(result.stdout)
+                if verbose and result.stderr:
+                    print(result.stderr, file=sys.stderr)
 
-                if (
-                    convert_res.returncode != 0
-                    or "Failed to save" in convert_res.stderr
-                    or "Script Error" in convert_res.stderr
-                ):
+                if result.returncode != 0:
                     msg = (
-                        f"Failed to export isolated group '{node.id}' ({node.label}) "
-                        f"to {output_file}:\n{convert_res.stderr}"
+                        f"Failed to export group '{node.id}' ({node.label}) "
+                        f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
                     )
                     raise RuntimeError(msg)
-            finally:
-                if tmp_svg_path.exists():
-                    tmp_svg_path.unlink()
+
+                if fmt_clean == "svg" and margin > 0:
+                    add_margin_to_svg(output_file, margin)
+
+            elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
+                # High-fidelity raster pipeline: Render isolated PNG with Cairo -> Convert via ImageMagick
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
+                    tmp_png_path = Path(tmp_png.name)
+
+                try:
+                    render_cmd = [
+                        inkscape_path,
+                        str(active_svg),
+                        f"--export-id={node.id}",
+                        "--export-id-only",
+                        f"--export-dpi={dpi}",
+                        f"--export-filename={tmp_png_path}",
+                    ]
+                    if area_arg:
+                        render_cmd.append(f"--export-area={area_arg}")
+
+                    if verbose:
+                        print(f"[VERBOSE] Rendering intermediate PNG: {' '.join(render_cmd)}")
+
+                    try:
+                        render_res = subprocess.run(
+                            render_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Raster render of group '{node.id}' ({node.label}) timed out "
+                            f"after {timeout} seconds: {' '.join(render_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if (
+                        render_res.returncode != 0
+                        or not tmp_png_path.exists()
+                        or tmp_png_path.stat().st_size == 0
+                    ):
+                        msg = f"Failed to render intermediate PNG for group '{node.id}' ({node.label}):\n{render_res.stderr}"
+                        raise RuntimeError(msg)
+
+                    # Convert PNG to target raster format via ImageMagick
+                    convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
+                    if verbose:
+                        print(f"[VERBOSE] Converting raster image: {' '.join(convert_cmd)}")
+
+                    try:
+                        conv_res = subprocess.run(
+                            convert_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"ImageMagick conversion of '{node.id}' timed out "
+                            f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if conv_res.returncode != 0:
+                        msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
+                        raise RuntimeError(msg)
+                finally:
+                    if tmp_png_path.exists():
+                        tmp_png_path.unlink()
+
+            elif fmt_clean in ARCHIVE_FORMATS:
+                # Package isolated SVG into archive
+                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                    tmp_svg_path = Path(tmp_svg.name)
+
+                try:
+                    extract_cmd = [
+                        inkscape_path,
+                        str(active_svg),
+                        f"--export-id={node.id}",
+                        "--export-id-only",
+                        "--export-plain-svg",
+                        f"--export-filename={tmp_svg_path}",
+                    ]
+                    if verbose:
+                        print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
+
+                    try:
+                        extract_res = subprocess.run(
+                            extract_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Isolation of group '{node.id}' ({node.label}) timed out "
+                            f"after {timeout} seconds: {' '.join(extract_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if (
+                        extract_res.returncode != 0
+                        or not tmp_svg_path.exists()
+                        or tmp_svg_path.stat().st_size == 0
+                    ):
+                        msg = (
+                            f"Failed to isolate group '{node.id}' ({node.label}) "
+                            f"to temporary SVG:\n{extract_res.stderr}"
+                        )
+                        raise RuntimeError(msg)
+
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
+
+                    if fmt_clean == "tar":
+                        with tarfile.open(output_file, "w") as tar:
+                            tar.add(tmp_svg_path, arcname=f"{leaf_name}.svg")
+                    elif fmt_clean == "zip":
+                        with zipfile.ZipFile(
+                            output_file, "w", compression=zipfile.ZIP_DEFLATED
+                        ) as zf:
+                            zf.write(tmp_svg_path, arcname=f"{leaf_name}.svg")
+                    elif fmt_clean == "svgz":
+                        with tmp_svg_path.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
+                            f_out.writelines(f_in)
+                finally:
+                    if tmp_svg_path.exists():
+                        tmp_svg_path.unlink()
+
+            else:
+                # Two-step export for extension/script formats (e.g. hpgl, dxf, tex, pov, sif, etc.)
+                # Step 1: Extract isolated SVG sub-tree
+                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                    tmp_svg_path = Path(tmp_svg.name)
+
+                try:
+                    extract_cmd = [
+                        inkscape_path,
+                        str(active_svg),
+                        f"--export-id={node.id}",
+                        "--export-id-only",
+                        "--export-plain-svg",
+                        f"--export-filename={tmp_svg_path}",
+                    ]
+                    if verbose:
+                        print(f"[VERBOSE] Isolating group SVG: {' '.join(extract_cmd)}")
+
+                    try:
+                        extract_res = subprocess.run(
+                            extract_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Isolation of group '{node.id}' ({node.label}) timed out "
+                            f"after {timeout} seconds: {' '.join(extract_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if (
+                        extract_res.returncode != 0
+                        or not tmp_svg_path.exists()
+                        or tmp_svg_path.stat().st_size == 0
+                    ):
+                        msg = (
+                            f"Failed to isolate group '{node.id}' ({node.label}) "
+                            f"to temporary SVG:\n{extract_res.stderr}"
+                        )
+                        raise RuntimeError(msg)
+
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
+
+                    # Step 1.5: If format is XAML, annotate the isolated group with inkscape:groupmode="layer"
+                    if fmt_clean == "xaml":
+                        annotate_svg_layers(tmp_svg_path, default_label=node.label or node.id)
+
+                    # Step 2: Convert isolated SVG to target format
+                    convert_cmd = [
+                        inkscape_path,
+                        str(tmp_svg_path),
+                        f"--export-filename={output_file}",
+                    ]
+                    if verbose:
+                        print(f"[VERBOSE] Converting isolated SVG: {' '.join(convert_cmd)}")
+
+                    try:
+                        convert_res = subprocess.run(
+                            convert_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Conversion of isolated group '{node.id}' ({node.label}) timed out "
+                            f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if verbose and convert_res.stdout:
+                        print(convert_res.stdout)
+                    if verbose and convert_res.stderr:
+                        print(convert_res.stderr, file=sys.stderr)
+
+                    if (
+                        convert_res.returncode != 0
+                        or "Failed to save" in convert_res.stderr
+                        or "Script Error" in convert_res.stderr
+                    ):
+                        msg = (
+                            f"Failed to export isolated group '{node.id}' ({node.label}) "
+                            f"to {output_file}:\n{convert_res.stderr}"
+                        )
+                        raise RuntimeError(msg)
+                finally:
+                    if tmp_svg_path.exists():
+                        tmp_svg_path.unlink()
+        finally:
+            if tmp_cleaned_svg and tmp_cleaned_svg.exists():
+                tmp_cleaned_svg.unlink()
 
         # Post-export file verification and sanity checking
         verify_exported_file(output_file, verbose=verbose, timeout=timeout)
@@ -649,6 +836,8 @@ def export_full_document(
     timeout: float = DEFAULT_TIMEOUT,
     dry_run: bool = False,
     verbose: bool = False,
+    no_mark_numbers: bool = False,
+    margin: float = DEFAULT_MARGIN,
 ) -> Path:
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
@@ -666,137 +855,235 @@ def export_full_document(
         magick_path = shutil.which("magick") or shutil.which("convert")
         fmt_dir.mkdir(parents=True, exist_ok=True)
 
-        if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
-            cmd = [
-                inkscape_path,
-                str(svg_file),
-                f"--export-filename={output_file}",
-            ]
-
-            if fmt_clean == "svg":
-                cmd.append("--export-plain-svg")
-            elif fmt_clean == "png":
-                cmd.append(f"--export-dpi={dpi}")
-
+        active_svg = svg_file
+        tmp_cleaned_svg: Path | None = None
+        if no_mark_numbers:
+            tmp_cleaned_svg = remove_mark_number_indicators(svg_file)
+            active_svg = tmp_cleaned_svg
             if verbose:
-                print(f"[VERBOSE] Running: {' '.join(cmd)}")
+                print("[VERBOSE] Removed mark number indicators from full document")
 
+        # Calculate document bounding area with margin if margin > 0
+        area_arg: str | None = None
+        if margin > 0:
             try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=timeout,
-                )
-            except subprocess.TimeoutExpired as e:
-                msg = (
-                    f"Export of full document '{svg_file.name}' timed out "
-                    f"after {timeout} seconds: {' '.join(cmd)}"
-                )
-                raise RuntimeError(msg) from e
+                doc_tree = etree.parse(str(active_svg))
+                vb = doc_tree.getroot().get("viewBox")
+                if vb:
+                    parts = [float(v) for v in vb.split()]
+                    if len(parts) == 4:
+                        min_x, min_y, w, h = parts
+                        area_arg = f"{min_x - margin}:{min_y - margin}:{min_x + w + margin}:{min_y + h + margin}"
+            except Exception:
+                pass
 
-            if verbose and result.stdout:
-                print(result.stdout)
-            if verbose and result.stderr:
-                print(result.stderr, file=sys.stderr)
-
-            if result.returncode != 0:
-                msg = (
-                    f"Failed to export full document '{svg_file}' "
-                    f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
-                )
-                raise RuntimeError(msg)
-
-        elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
-            # High-fidelity raster pipeline for full document
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
-                tmp_png_path = Path(tmp_png.name)
-
-            try:
-                render_cmd = [
-                    inkscape_path,
-                    str(svg_file),
-                    f"--export-dpi={dpi}",
-                    f"--export-filename={tmp_png_path}",
-                ]
-                if verbose:
-                    print(f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}")
-
-                try:
-                    render_res = subprocess.run(
-                        render_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"Full document PNG render timed out "
-                        f"after {timeout} seconds: {' '.join(render_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if (
-                    render_res.returncode != 0
-                    or not tmp_png_path.exists()
-                    or tmp_png_path.stat().st_size == 0
-                ):
-                    msg = f"Failed to render full document PNG:\n{render_res.stderr}"
-                    raise RuntimeError(msg)
-
-                convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
-                if verbose:
-                    print(
-                        f"[VERBOSE] Converting full document raster image: {' '.join(convert_cmd)}"
-                    )
-
-                try:
-                    conv_res = subprocess.run(
-                        convert_cmd,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        timeout=timeout,
-                    )
-                except subprocess.TimeoutExpired as e:
-                    msg = (
-                        f"ImageMagick full document conversion timed out "
-                        f"after {timeout} seconds: {' '.join(convert_cmd)}"
-                    )
-                    raise RuntimeError(msg) from e
-
-                if conv_res.returncode != 0:
-                    msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
-                    raise RuntimeError(msg)
-            finally:
-                if tmp_png_path.exists():
-                    tmp_png_path.unlink()
-
-        elif fmt_clean in ARCHIVE_FORMATS:
-            if fmt_clean == "tar":
-                with tarfile.open(output_file, "w") as tar:
-                    tar.add(svg_file, arcname=f"{svg_file.stem}.svg")
-            elif fmt_clean == "zip":
-                with zipfile.ZipFile(output_file, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    zf.write(svg_file, arcname=f"{svg_file.stem}.svg")
-            elif fmt_clean == "svgz":
-                with svg_file.open("rb") as f_in, gzip.open(output_file, "wb") as f_out:
-                    f_out.writelines(f_in)
-
-        elif fmt_clean == "xaml":
-            # XAML extension requires layers for resources; annotate copy of document
-            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
-                tmp_svg_path = Path(tmp_svg.name)
-            try:
-                shutil.copy2(svg_file, tmp_svg_path)
-                annotate_svg_layers(tmp_svg_path, default_label=svg_file.stem)
+        try:
+            if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
                 cmd = [
                     inkscape_path,
-                    str(tmp_svg_path),
+                    str(active_svg),
                     f"--export-filename={output_file}",
                 ]
+
+                if fmt_clean == "svg":
+                    cmd.append("--export-plain-svg")
+                elif fmt_clean == "png":
+                    cmd.append(f"--export-dpi={dpi}")
+
+                if fmt_clean in ("png", "pdf", "eps", "ps") and area_arg:
+                    cmd.append(f"--export-area={area_arg}")
+
+                if verbose:
+                    print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=timeout,
+                    )
+                except subprocess.TimeoutExpired as e:
+                    msg = (
+                        f"Export of full document '{svg_file.name}' timed out "
+                        f"after {timeout} seconds: {' '.join(cmd)}"
+                    )
+                    raise RuntimeError(msg) from e
+
+                if verbose and result.stdout:
+                    print(result.stdout)
+                if verbose and result.stderr:
+                    print(result.stderr, file=sys.stderr)
+
+                if result.returncode != 0:
+                    msg = (
+                        f"Failed to export full document '{svg_file}' "
+                        f"to {output_file} (exit code {result.returncode}):\n{result.stderr}"
+                    )
+                    raise RuntimeError(msg)
+
+                if fmt_clean == "svg" and margin > 0:
+                    add_margin_to_svg(output_file, margin)
+
+            elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
+                # High-fidelity raster pipeline for full document
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
+                    tmp_png_path = Path(tmp_png.name)
+
+                try:
+                    render_cmd = [
+                        inkscape_path,
+                        str(active_svg),
+                        f"--export-dpi={dpi}",
+                        f"--export-filename={tmp_png_path}",
+                    ]
+                    if area_arg:
+                        render_cmd.append(f"--export-area={area_arg}")
+
+                    if verbose:
+                        print(f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}")
+
+                    try:
+                        render_res = subprocess.run(
+                            render_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Full document PNG render timed out "
+                            f"after {timeout} seconds: {' '.join(render_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if (
+                        render_res.returncode != 0
+                        or not tmp_png_path.exists()
+                        or tmp_png_path.stat().st_size == 0
+                    ):
+                        msg = f"Failed to render full document PNG:\n{render_res.stderr}"
+                        raise RuntimeError(msg)
+
+                    convert_cmd = [magick_path, str(tmp_png_path), str(output_file)]
+                    if verbose:
+                        print(
+                            f"[VERBOSE] Converting full document raster image: {' '.join(convert_cmd)}"
+                        )
+
+                    try:
+                        conv_res = subprocess.run(
+                            convert_cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"ImageMagick full document conversion timed out "
+                            f"after {timeout} seconds: {' '.join(convert_cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if conv_res.returncode != 0:
+                        msg = f"ImageMagick failed to convert '{tmp_png_path}' to '{output_file}':\n{conv_res.stderr}"
+                        raise RuntimeError(msg)
+                finally:
+                    if tmp_png_path.exists():
+                        tmp_png_path.unlink()
+
+            elif fmt_clean in ARCHIVE_FORMATS:
+                archive_source_svg = active_svg
+                tmp_margin_svg: Path | None = None
+                if margin > 0:
+                    with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                        tmp_margin_svg = Path(tmp_svg.name)
+                    shutil.copy2(active_svg, tmp_margin_svg)
+                    add_margin_to_svg(tmp_margin_svg, margin)
+                    archive_source_svg = tmp_margin_svg
+
+                try:
+                    if fmt_clean == "tar":
+                        with tarfile.open(output_file, "w") as tar:
+                            tar.add(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                    elif fmt_clean == "zip":
+                        with zipfile.ZipFile(
+                            output_file, "w", compression=zipfile.ZIP_DEFLATED
+                        ) as zf:
+                            zf.write(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                    elif fmt_clean == "svgz":
+                        with (
+                            archive_source_svg.open("rb") as f_in,
+                            gzip.open(output_file, "wb") as f_out,
+                        ):
+                            f_out.writelines(f_in)
+                finally:
+                    if tmp_margin_svg and tmp_margin_svg.exists():
+                        tmp_margin_svg.unlink(missing_ok=True)
+
+            elif fmt_clean == "xaml":
+                # XAML extension requires layers for resources; annotate copy of document
+                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
+                    tmp_svg_path = Path(tmp_svg.name)
+                try:
+                    shutil.copy2(active_svg, tmp_svg_path)
+                    annotate_svg_layers(tmp_svg_path, default_label=svg_file.stem)
+                    if margin > 0:
+                        add_margin_to_svg(tmp_svg_path, margin)
+
+                    cmd = [
+                        inkscape_path,
+                        str(tmp_svg_path),
+                        f"--export-filename={output_file}",
+                    ]
+                    if verbose:
+                        print(f"[VERBOSE] Running: {' '.join(cmd)}")
+
+                    try:
+                        result = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            timeout=timeout,
+                        )
+                    except subprocess.TimeoutExpired as e:
+                        msg = (
+                            f"Export of full document '{svg_file.name}' timed out "
+                            f"after {timeout} seconds: {' '.join(cmd)}"
+                        )
+                        raise RuntimeError(msg) from e
+
+                    if verbose and result.stdout:
+                        print(result.stdout)
+                    if verbose and result.stderr:
+                        print(result.stderr, file=sys.stderr)
+
+                    if (
+                        result.returncode != 0
+                        or "Failed to save" in result.stderr
+                        or "Script Error" in result.stderr
+                    ):
+                        msg = (
+                            f"Failed to export full document '{svg_file}' "
+                            f"to {output_file}:\n{result.stderr}"
+                        )
+                        raise RuntimeError(msg)
+                finally:
+                    if tmp_svg_path.exists():
+                        tmp_svg_path.unlink()
+
+            else:
+                # Fallback direct invocation for other formats
+                cmd = [
+                    inkscape_path,
+                    str(active_svg),
+                    f"--export-filename={output_file}",
+                ]
+
                 if verbose:
                     print(f"[VERBOSE] Running: {' '.join(cmd)}")
 
@@ -830,51 +1117,9 @@ def export_full_document(
                         f"to {output_file}:\n{result.stderr}"
                     )
                     raise RuntimeError(msg)
-            finally:
-                if tmp_svg_path.exists():
-                    tmp_svg_path.unlink()
-
-        else:
-            # Fallback direct invocation for other formats
-            cmd = [
-                inkscape_path,
-                str(svg_file),
-                f"--export-filename={output_file}",
-            ]
-
-            if verbose:
-                print(f"[VERBOSE] Running: {' '.join(cmd)}")
-
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=timeout,
-                )
-            except subprocess.TimeoutExpired as e:
-                msg = (
-                    f"Export of full document '{svg_file.name}' timed out "
-                    f"after {timeout} seconds: {' '.join(cmd)}"
-                )
-                raise RuntimeError(msg) from e
-
-            if verbose and result.stdout:
-                print(result.stdout)
-            if verbose and result.stderr:
-                print(result.stderr, file=sys.stderr)
-
-            if (
-                result.returncode != 0
-                or "Failed to save" in result.stderr
-                or "Script Error" in result.stderr
-            ):
-                msg = (
-                    f"Failed to export full document '{svg_file}' "
-                    f"to {output_file}:\n{result.stderr}"
-                )
-                raise RuntimeError(msg)
+        finally:
+            if tmp_cleaned_svg and tmp_cleaned_svg.exists():
+                tmp_cleaned_svg.unlink()
 
         # Post-export file verification and sanity checking
         verify_exported_file(output_file, verbose=verbose, timeout=timeout)
@@ -905,6 +1150,9 @@ Examples:
 
   # Export a specific mark to plain SVG:
   python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "Mark 5"
+
+  # Export mark 45 without its number indicator badge:
+  python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "Mark 45" --no-mark-numbers
 
   # Export all marks matching a regex to PNG format:
   python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "^Mark [1-5]$" --format png
@@ -969,6 +1217,25 @@ Examples:
         type=Path,
         default=None,
         help="Target output base directory. Defaults to the current working directory.",
+    )
+    parser.add_argument(
+        "-m",
+        "--margin",
+        "--padding",
+        type=float,
+        default=DEFAULT_MARGIN,
+        help=f"Canvas margin/padding in pixels to add around export bounds on all sides (default: {DEFAULT_MARGIN}, use 0 for no margin).",
+    )
+    parser.add_argument(
+        "--no-mark-numbers",
+        "--hide-mark-numbers",
+        "--no-mark-indicators",
+        "--hide-mark-indicators",
+        "--no-indicators",
+        dest="no_mark_numbers",
+        action="store_true",
+        default=False,
+        help="Turn off / remove child mark number identifier groups (e.g. child group labeled '45' in 'Mark 45') before export.",
     )
     parser.add_argument(
         "--dpi",
@@ -1055,6 +1322,8 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=args.timeout,
                 dry_run=args.dry_run,
                 verbose=args.verbose,
+                no_mark_numbers=args.no_mark_numbers,
+                margin=args.margin,
             )
             action_label = "Would export" if args.dry_run else "Successfully exported"
             print(f"{action_label} full document as '{fmt.lower()}'.")
@@ -1097,23 +1366,41 @@ def main(argv: list[str] | None = None) -> int:
         f"Exporting {len(targets)} group(s) as '{fmt.lower()}' to '{output_dir / 'fmt' / fmt.lower()}'..."
     )
 
+    source_svg = args.svg_file
+    cleaned_temp_svg: Path | None = None
+    if args.no_mark_numbers and not args.dry_run:
+        cleaned_temp_svg = remove_mark_number_indicators(args.svg_file)
+        source_svg = cleaned_temp_svg
+
+    # Pre-cache element bounding boxes if margin is requested
+    bbox_cache: dict[str, tuple[float, float, float, float]] | None = None
+    if args.margin > 0 and not args.dry_run:
+        bbox_cache = get_element_bounding_boxes(source_svg, timeout=args.timeout)
+
     exported_count = 0
-    for node in targets:
-        try:
-            export_group(
-                svg_file=args.svg_file,
-                node=node,
-                fmt=fmt,
-                output_base_dir=output_dir,
-                dpi=args.dpi,
-                timeout=args.timeout,
-                dry_run=args.dry_run,
-                verbose=args.verbose,
-            )
-            exported_count += 1
-        except Exception as e:
-            print(f"Error exporting [{node.id}] '{node.label}': {e}", file=sys.stderr)
-            return 1
+    try:
+        for node in targets:
+            try:
+                export_group(
+                    svg_file=source_svg,
+                    node=node,
+                    fmt=fmt,
+                    output_base_dir=output_dir,
+                    dpi=args.dpi,
+                    timeout=args.timeout,
+                    dry_run=args.dry_run,
+                    verbose=args.verbose,
+                    no_mark_numbers=False,
+                    margin=args.margin,
+                    bbox_cache=bbox_cache,
+                )
+                exported_count += 1
+            except Exception as e:
+                print(f"Error exporting [{node.id}] '{node.label}': {e}", file=sys.stderr)
+                return 1
+    finally:
+        if cleaned_temp_svg and cleaned_temp_svg.exists():
+            cleaned_temp_svg.unlink(missing_ok=True)
 
     action_label = "Would export" if args.dry_run else "Successfully exported"
     print(f"{action_label} {exported_count} group(s).")
