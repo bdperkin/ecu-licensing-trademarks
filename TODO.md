@@ -114,11 +114,99 @@ Comprehensive status, architectural review, and task tracking for the East Carol
   - [x] Rename and align `ECU Health Note` in Institutional Marks
   - [x] Expand `tools/audit_svg.py` to 8 automated checks (adding label formatting, numbered marks sequence/indicator validation, and canvas-root stranded element checks)
   - [x] Configure `.pre-commit-config.yaml` and GitHub Actions CI workflow (`.github/workflows/ci.yml`) to automatically audit the SVG on commits and pull requests
-  - [x] Export high-resolution PNG render (`fmt/png/art-sheet-5-8-23/2023-05-08-art-sheet-01.png` at 229.33 DPI)
-  - [x] Add `.gitignore` for Python cache (`__pycache__/`) and editor swap files (`*.swp`, `.*.swp`)
+  - [x] Develop `tools/export_svg_groups.py` with multi-tier export pipeline (native C++, ImageMagick raster conversion, Python tar/zip/svgz archives, and layer-annotated XAML)
+  - [x] Implement configurable subprocess timeout (`--timeout`), post-export file verification, and ImageMagick sanity checking
+  - [x] Build comprehensive unit test suite in `tools/test_export_svg_groups.py` (33 unit tests passing)
+  - [x] Integrate Astral toolchain (`uv`, `ruff`, `ty`) across development, packaging (`pyproject.toml`, `uv.lock`), 14 pre-commit hooks (`ty-check`), and CI matrix workflows
+  - [x] Export full document and all 91 marks across PNG, SVG, JPG, and WebP formats into `fmt/`
+  - [x] Add `.gitignore` ignoring non-primary intermediate export formats in `fmt/` and environment caches
 
 ---
 
-### 2. Remaining / Optimization Opportunities
+## Future Evaluation: Tooling, Linters, Formatters & Validators by Filetype
 
-*All identified tasks, structural reviews, optimizations, and CI integrations have been completed.*
+The following catalog outlines potential quality assurance tooling, static analyzers, linters, formatters, and integrity validators for all filetypes present in this repository, cataloged for future evaluation:
+
+### Filetype Summary Matrix
+
+| Filetype | Current Tooling in Repo | Candidate Tooling / High-Value Validators | Proposed Integration Layer |
+| :--- | :--- | :--- | :--- |
+| **`.md`** | `markdownlint-cli` (v0.41.0) | `lychee` (broken link/anchor checker), `prettier` (formatter), `vale` (style linter) | Pre-commit / CI Job |
+| **`.gitignore`** | `trailing-whitespace`, `end-of-file-fixer` | `git check-ignore` (pattern tester), `check-gitignore` (alphabetical/duplicate audit) | Pre-commit / Test Suite |
+| **`.pdf`** | `check-added-large-files` | `qpdf --check` (structural integrity), `pdfinfo` (poppler), `pdfcpu validate` (ISO 32000) | CI / Unit Test |
+| **`.png`** | ImageMagick `identify` (export validator) | `pngcheck` (chunk & CRC integrity check), `oxipng` (lossless optimization) | Unit Test / Pre-commit |
+| **`.jpg`** | ImageMagick `identify` (export validator) | `jpeginfo -c` (syntax & corruption audit), `jpegtran` / `mozjpeg` | Unit Test / Pre-commit |
+| **`.svg`** | `audit_svg.py` (8 automated checks), `check-xml` | `xmllint --noout` (schema & namespace audit), `svgo` (SVG optimizer) | Pre-commit / CI Job |
+| **`.lock`** | Checked into git (`uv.lock`) | `uv lock --check` (verifies lockfile parity with `pyproject.toml`) | CI `astral-quality` Job |
+| **`.yaml` / `.yml`** | `check-yaml` (pre-commit-hooks) | `actionlint` (GitHub Actions workflow static checker), `yamllint` | Pre-commit / CI Job |
+| **`.toml`** | Parsed by `uv`, `ruff`, and `ty` | `check-toml` (pre-commit-hooks), `taplo` (formatter), `validate-pyproject` | Pre-commit / CI Job |
+| **`.webp`** | ImageMagick `identify` (export validator) | `webpinfo` / `dwebp` (bitstream & chunk validation) | Unit Test / Pre-commit |
+| **`.txt`** | `requirements-txt-fixer`, `audit_svg.py` inverse ignore checks | `codespell` (fast repo-wide spellcheck) | Pre-commit / CI Job |
+| **`.py`** | `ruff`, `ruff-format`, `ty`, `unittest` | `bandit` (security AST linter), `coverage.py` (code coverage metrics) | Pre-commit / CI Job |
+
+---
+
+### Detailed Tooling Catalog by Filetype
+
+#### 1. Markdown (`.md`)
+
+- **`lychee` / `markdown-link-check`**: Validates all relative file paths, internal anchor targets (`#heading-id`), and external HTTP/HTTPS links across documentation files to eliminate dead references.
+- **`prettier`**: Opinionated Markdown and table formatter to ensure consistent spacing, table pipe alignment, and list indentation across all READMEs.
+- **`vale`**: Prose and style linter for technical documentation and trademark guidelines.
+
+#### 2. Git Ignore (`.gitignore`)
+
+- **`check-gitignore` / `sort-gitignore`**: Enforces alphabetical ordering and detects redundant, shadowed, or duplicate ignore rules.
+- **`git check-ignore -v`**: Diagnostic utility for verifying pattern matching against paths.
+
+#### 3. PDF Documents (`.pdf`)
+
+- **`qpdf --check`**: Deep structural and syntax analysis of PDF files, cross-reference tables, and embedded object streams to prevent corrupted references.
+- **`pdfinfo` (`poppler-utils`)**: Extracts and verifies metadata, page geometry, PDF version conformance, and encryption states.
+- **`pdfcpu validate`**: Command-line PDF processing library providing strict ISO 32000 PDF validation.
+
+#### 4. Raster Images (`.png`, `.jpg`, `.webp`)
+
+- **`pngcheck` (`pngcheck -q -v file.png`)**: Audits PNG chunk ordering, validates CRC checksums, and flags incomplete or corrupted zlib data streams.
+- **`jpeginfo` (`jpeginfo -c file.jpg`)**: Verifies JPEG syntax, markers, Huffman tables, and flags corrupted or truncated scans.
+- **`webpinfo` / `dwebp` (`dwebp image.webp -o /dev/null`)**: Decodes WebP bitstream headers (VP8, VP8L, VP8X, ALPH, ICCP) and verifies lossy/lossless payload validity.
+- **`oxipng` / `mozjpeg`**: Lossless compression optimizers for repository distribution assets.
+
+#### 5. Vector Graphics (`.svg`)
+
+- **`xmllint --noout` (`libxml2`)**: Validates XML grammar, schema conformance, and XML namespace declarations across all SVG files.
+- **`svgo`**: SVG optimizer and linter for identifying redundant elements, unused defs, and precision anomalies.
+
+#### 6. Lockfiles & Dependencies (`uv.lock`, `requirements*.txt`)
+
+- **`uv lock --check`**: Asserts in CI that `uv.lock` remains 100% synchronized with `pyproject.toml` without auto-modifying it.
+- **`pip-audit` / `uv run pip-audit`**: Scans locked dependencies against the Open Source Vulnerability (OSV) and PyPI advisory databases.
+
+#### 7. YAML (`.yaml`, `.yml`)
+
+- **`actionlint`**: Static checker dedicated to GitHub Actions workflow files (`.github/workflows/*.yml`), verifying expression types, context keys, runner constraints, and security best practices.
+- **`yamllint`**: Comprehensive YAML linter checking document formatting, indentation, key duplication, and boolean notation.
+
+#### 8. TOML (`pyproject.toml`)
+
+- **`check-toml`**: Standard hook in `pre-commit/pre-commit-hooks` to validate TOML syntax.
+- **`taplo`**: Specialized TOML formatter and schema validator (`taplo check`, `taplo fmt`).
+- **`validate-pyproject`**: Validates `pyproject.toml` metadata against PEP 517, PEP 518, and PEP 621 packaging specifications.
+
+#### 9. Plain Text & Dictionaries (`.txt`)
+
+- **`codespell`**: High-performance spelling checker for source code, plain text files, comments, and documentation.
+
+#### 10. Python Code (`.py`)
+
+- **`bandit`**: Security AST static analysis tool for detecting common security flaws (insecure temporary files, command injections, weak cryptography).
+- **`coverage.py` (`pytest-cov` / `coverage run`)**: Measures code coverage and ensures unit tests cover all branching logic in `tools/`.
+
+---
+
+### High-Priority Immediate Candidates for Next Iteration
+
+1. **`check-toml`**: Add to `pre-commit-hooks` in `.pre-commit-config.yaml` to validate `pyproject.toml`.
+2. **`uv lock --check`**: Add to `.github/workflows/ci.yml` `astral-quality` job to enforce lockfile parity in CI.
+3. **`actionlint`**: Add to `.pre-commit-config.yaml` or CI to audit workflow syntax and security.
+4. **`pngcheck` / `jpeginfo` / `dwebp`**: Integrate into `tools/test_export_svg_groups.py` for automated raster bitstream integrity testing.

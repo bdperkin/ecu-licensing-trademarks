@@ -4,7 +4,7 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [audit-svg, test-audit-tool]
+  skip: [audit-svg, test-tools, ty-check]
   submodules: false
 
 repos:
@@ -22,7 +22,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.2
+    rev: v0.9.9
     hooks:
       - id: ruff
         args: [--fix]
@@ -36,6 +36,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: ty-check
+        name: Type Check (Astral ty)
+        entry: ty check
+        language: system
+        files: ^tools/.*\.py$
+        pass_filenames: false
+
       - id: audit-svg
         name: Audit Art Sheet SVG
         entry: python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --strict -s
@@ -43,9 +50,9 @@ repos:
         files: ^(src/.*\.svg|tools/.*)$
         pass_filenames: false
 
-      - id: test-audit-tool
-        name: Run Audit Tool Unit Tests
-        entry: python3 -m unittest tools/test_audit_svg.py
+      - id: test-tools
+        name: Run Tools Unit Tests
+        entry: python3 -m unittest discover -s tools
         language: system
         files: ^tools/.*\.py$
         pass_filenames: false

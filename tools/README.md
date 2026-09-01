@@ -1,6 +1,6 @@
 # Tooling & Quality Assurance Suite (`tools/`)
 
-This directory contains automated audit scripts, unit tests, and validation dictionaries used to verify the structural integrity, XML correctness, and labeling hygiene of the SVG assets in this repository.
+This directory contains automated audit scripts, group extraction utilities, unit tests, and validation dictionaries used to verify the structural integrity, XML correctness, labeling hygiene, and asset exports of the SVG files in this repository.
 
 ---
 
@@ -8,10 +8,12 @@ This directory contains automated audit scripts, unit tests, and validation dict
 
 ```text
 tools/
-├── audit_svg.py         # Main automated SVG structural and labeling audit tool
-├── test_audit_svg.py    # Unit test suite covering all 8 audit check routines
-├── wordlist.txt         # Approved proper nouns, acronyms, and trademarks for spellchecking
-└── duplicates.txt       # Duplicate group label ignore list (0 entries; all labels are globally unique)
+├── audit_svg.py               # Main automated SVG structural and labeling audit tool
+├── test_audit_svg.py          # Unit test suite covering all 8 audit check routines
+├── export_svg_groups.py       # SVG group hierarchy inspector, tree viewer, and batch exporter
+├── test_export_svg_groups.py  # Unit test suite for export_svg_groups.py
+├── wordlist.txt               # Approved proper nouns, acronyms, and trademarks for spellchecking
+└── duplicates.txt             # Duplicate group label ignore list (0 entries; all labels are globally unique)
 ```
 
 ---
@@ -33,9 +35,7 @@ tools/
 | **7** | **Numbered Marks** | `--marks`, `-c marks` | Verifies sequential numbering (e.g. `Mark 1` through `Mark 91`) and checks that each mark contains a matching number child (`1`..`91`). |
 | **8** | **Ungrouped Elements** | `--ungrouped`, `-c ungrouped` | Detects raw drawable elements (`<path>`, `<rect>`, `<circle>`, etc.) placed directly at the canvas root outside of section groups. |
 
----
-
-## CLI Usage & Options
+### CLI Usage & Options
 
 ```bash
 # Run all 8 checks with summary statistics
@@ -46,36 +46,87 @@ python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --st
 
 # Run specific checks (e.g. formatting and numbered marks)
 python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -c formatting marks
-
-# Specify custom wordlist or duplicates files
-python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -w tools/wordlist.txt -d tools/duplicates.txt
 ```
-
-### Command-Line Arguments Reference
-
-- `svg_path`: Path to the SVG file to audit.
-- `-w, --wordlist`: Path to a custom word list file for spellchecking.
-- `-d, --duplicates-list`: Path to a custom duplicate labels ignore file.
-- `--strict-duplicates, --strict`: Disables duplicate ignore lists and reports all duplicate labels.
-- `-c, --checks`: Space- or comma-separated list of checks to run (`missing`, `duplicates`, `spelling`, `empty`, `single`, `formatting`, `marks`, `ungrouped`, `all`).
-- `-s, --stats, --summary`: Prints comprehensive audit statistics and metrics at the end of the run.
 
 ---
 
-## Unit Testing (`test_audit_svg.py`)
+## `export_svg_groups.py` Overview
 
-The unit test suite validates production art sheet compliance and exercises all 8 audit check routines using synthetic SVG test fixtures.
+`export_svg_groups.py` scans an SVG file to inspect, list, filter, and export group elements and hierarchical subtrees into structured directory layouts.
 
-To execute the test suite:
+### Key Behaviors
+
+- **No arguments**: Prints help message.
+- **File only (`python3 tools/export_svg_groups.py <file.svg>`)**: Prints an ASCII/Unicode hierarchy tree showing all groups with their IDs and labels.
+- **Group filtering (`-g`, `--group`, `-p`, `--pattern`)**: Filters groups by exact label, regex (e.g. `^Mark [1-5]$`), or glob (e.g. `Mark *`).
+- **Format defaults (`-f`, `--format`)**: Defaults to `svg` when a group filter is supplied. Defaults to exporting all 25 top-level section groups when `--format` is supplied without a group filter.
+- **Format discovery (`-F`, `--list-formats`, `--formats`)**: Dynamically queries the local Inkscape CLI and lists all supported export formats.
+- **Format validation**: Validates requested formats against dynamically discovered formats and reports allowed formats if unsupported.
+- **Full document export (`-a`, `--all`, `--full`, `--document`)**: Exports the entire SVG canvas as-is to `<output_dir>/fmt/<format>/<basename>.<format>`.
+- **Verbose logging (`-v`, `--verbose`)**: Enables detailed logging and displays exact subprocess CLI commands and progress.
+- **Configurable timeout (`-t`, `--timeout`)**: Sets the maximum execution timeout in seconds for individual Inkscape export processes (default: `120.0s`).
+- **Hierarchy preservation**: Exports into `<output_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/.../<leaf_name>.<format>` with lowercase hyphenated slugs.
+
+### CLI Usage Examples
 
 ```bash
-python3 -m unittest tools/test_audit_svg.py
+# View all supported Inkscape export formats:
+python3 tools/export_svg_groups.py --list-formats
+
+# View hierarchical tree of groups and IDs:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg
+
+# Export a single mark to SVG:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "Mark 5"
+
+# Export marks 1 through 5 to PNG format:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "^Mark [1-5]$" --format png
+
+# Export the entire document canvas to PNG:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --full --format png
+
+# Export all 25 top-level sections into ./dist:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --format svg --output-dir ./dist
 ```
+
+---
+
+## Unit Testing
+
+To execute all unit test suites in the `tools/` directory:
+
+```bash
+python3 -m unittest discover -s tools
+```
+
+## Development Tooling (Astral Suite)
+
+This project leverages the Astral toolchain for fast package management, linting, formatting, and static typing:
+
+- **Astral `uv`**: Fast package management and environment synchronization:
+
+  ```bash
+  uv sync --all-extras --dev
+  uv run python3 -m unittest discover -s tools
+  ```
+
+- **Astral `ruff`**: Linting and formatting:
+
+  ```bash
+  uv run ruff check . --fix
+  uv run ruff format .
+  ```
+
+- **Astral `ty`**: Ultra-fast static type checking:
+
+  ```bash
+  ty check
+  ```
 
 ---
 
 ## Ignore Dictionaries
 
-- **[`wordlist.txt`](wordlist.txt)**: Contains 10 valid proper nouns, institutional acronyms, and trademark terms:
+- **[`wordlist.txt`](wordlist.txt)**: Approved proper nouns, acronyms, and trademark terms:
   `Arrrgh`, `diplo`, `EC`, `Ficklen`, `Greenville`, `Minges`, `NC`, `OLCP`, `PANTONE`, `SPC`.
-- **[`duplicates.txt`](duplicates.txt)**: Empty file. Group label disambiguation has achieved 100% global uniqueness across all 1,045 groups in the art sheet SVG.
+- **[`duplicates.txt`](duplicates.txt)**: Empty. All 1,045 groups have globally unique labels.

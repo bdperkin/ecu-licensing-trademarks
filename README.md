@@ -26,13 +26,16 @@ Comprehensive repository containing normalized vector SVG assets, reference publ
 │       └── 2023-05-08-art-sheet-01.svg      # Master 3-page vector art sheet (Inkscape SVG)
 ├── fmt/                                     # Formatted and rendered export assets
 │   ├── README.md                            # Documentation for formatted assets
-│   └── png/                                 # Raster PNG image exports
-│       └── art-sheet-5-8-23/
-│           └── 2023-05-08-art-sheet-01.png  # High-resolution raster render (229.33 DPI)
-├── tools/                                   # Automated quality assurance suite
-│   ├── README.md                            # Documentation for audit tools and testing
+│   ├── jpg/                                 # JPEG raster exports (full sheet & marks 1–91)
+│   ├── png/                                 # PNG raster exports (full sheet & marks 1–91)
+│   ├── svg/                                 # Plain SVG vector exports (full sheet & marks 1–91)
+│   └── webp/                                # WebP raster exports (full sheet & marks 1–91)
+├── tools/                                   # Automated quality assurance & export suite
+│   ├── README.md                            # Documentation for audit & export tools
 │   ├── audit_svg.py                         # 8-check automated SVG structure & label audit tool
 │   ├── test_audit_svg.py                    # Unit test suite for audit routines
+│   ├── export_svg_groups.py                 # Multi-tier group & full document export utility
+│   ├── test_export_svg_groups.py            # Unit test suite for export routines (33 tests)
 │   ├── wordlist.txt                         # Approved proper nouns & acronyms for spellcheck
 │   └── duplicates.txt                       # Duplicate label ignore list (0 entries; 100% unique)
 ├── site-upload-content/                     # Original raw reference documents & extracts
@@ -47,11 +50,13 @@ Comprehensive repository containing normalized vector SVG assets, reference publ
 ├── .github/
 │   ├── dependabot.yml                       # Automated weekly dependency & workflow updates
 │   └── workflows/
-│       ├── ci.yml                           # CI workflow (linting, audit, unit tests, pip-audit)
+│       ├── ci.yml                           # CI workflow (Astral uv, ruff, ty, unit tests, audit)
 │       └── codeql.yml                       # CodeQL automated code scanning workflow
-├── .pre-commit-config.yaml                  # 13 pre-commit hooks for all repository file types
+├── .pre-commit-config.yaml                  # 14 pre-commit hooks for all repository file types
+├── pyproject.toml                           # Astral toolchain configuration (uv, ruff, ty)
+├── uv.lock                                  # Locked reproducible dependencies
 ├── requirements.txt                         # Runtime Python dependencies (lxml, pyspellchecker)
-├── requirements-dev.txt                     # Developer & CI dependencies (pre-commit, ruff, pip-audit)
+├── requirements-dev.txt                     # Developer & CI dependencies (pre-commit, ruff, ty)
 ├── SECURITY.md                              # Security policy & private vulnerability reporting
 ├── TODO.md                                  # Review checklist, section architecture, & status tracker
 └── README.md                                # Top-level documentation & trademark guidelines
@@ -119,14 +124,21 @@ The following notes, restrictions, and usage guidelines are extracted and expand
 
 ## Quality Assurance & Automated Validation
 
-The repository includes a validation suite ensuring the production SVG meets structural standards:
+The repository includes a validation and export testing suite ensuring all vector and raster assets meet structural standards:
 
 ```bash
 # Run all 8 automated checks in strict mode
 python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --strict -s
 
-# Run unit test suite
-python3 -m unittest tools/test_audit_svg.py
+# Run unit test suite (33 tests covering audit & export pipelines)
+python3 -m unittest discover -s tools
+
+# Run static type checking via Astral ty
+ty check
+
+# Run linting and format checks via Astral ruff
+uv run ruff check .
+uv run ruff format --check .
 
 # Run all pre-commit hooks locally
 pre-commit run --all-files
@@ -154,16 +166,16 @@ pre-commit run --all-files
    cd ecu-licensing-trademarks
    ```
 
-2. **Install Python dependencies**:
+2. **Synchronize environment and dependencies with Astral `uv`**:
 
    ```bash
-   pip install -r requirements-dev.txt
+   uv sync --all-extras --dev
    ```
 
 3. **Install pre-commit hooks**:
 
    ```bash
-   pre-commit install
+   uv run pre-commit install
    ```
 
 ---

@@ -17,19 +17,61 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
+      - name: Install Inkscape & ImageMagick
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          sudo apt-get update
+          sudo apt-get install -y inkscape imagemagick
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install Astral ty
+        run: uv tool install ty
+
+      - name: Install dev dependencies
+        run: uv sync --all-extras --dev
 
       - name: Run pre-commit hooks
-        run: pre-commit run --all-files
+        run: uv run pre-commit run --all-files
+        env:
+          PIP_INDEX_URL: "https://pypi.org/simple"
+
+  astral-quality:
+    name: Astral Ruff & Ty Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Check Lockfile Parity
+        run: uv lock --check
+
+      - name: Run Ruff Lint Check
+        run: uv run ruff check .
+
+      - name: Run Ruff Format Check
+        run: uv run ruff format --check .
+
+      - name: Run Astral Ty Type Check
+        run: |
+          uv tool install ty
+          ty check
 
   audit-and-test:
     name: Audit & Unit Tests (Python ${{ matrix.python-version }})
@@ -42,24 +84,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - name: Install Inkscape & ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y inkscape imagemagick
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: uv sync --all-extras --dev --python ${{ matrix.python-version }}
 
       - name: Run SVG Audit (Strict Mode)
         run: |
-          python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --strict -s
+          uv run python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --strict -s
 
       - name: Run Unit Tests
         run: |
-          python3 -m unittest tools/test_audit_svg.py
+          uv run python3 -m unittest discover -s tools
 
   security-scan:
     name: Security Vulnerability Scan (pip-audit)
@@ -68,16 +115,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: uv sync --all-extras --dev
 
       - name: Run pip-audit security vulnerability scan
-        run: pip-audit -r requirements.txt -r requirements-dev.txt
+        run: uv run pip-audit -r requirements.txt -r requirements-dev.txt

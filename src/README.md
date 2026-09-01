@@ -27,7 +27,7 @@ The master vector asset is a 3-page consolidated canvas containing all 91 offici
 - **Structural Integrity**: Zero empty groups, zero single-object wrapper groups, and zero stranded canvas-root elements.
 
 > [!NOTE]
-> High-resolution raster renders (PNG) generated from this SVG are stored in [`fmt/png/`](../fmt/png/). See [`fmt/README.md`](../fmt/README.md) for details.
+> Formatted raster renders (PNG, JPG, WebP) and plain SVG vector files generated from this master SVG are stored in [`fmt/`](../fmt/). See [`fmt/README.md`](../fmt/README.md) for details.
 
 ---
 
