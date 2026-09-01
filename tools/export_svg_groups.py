@@ -1188,24 +1188,34 @@ def main(argv: list[str] | None = None) -> int:
         f"Exporting {len(targets)} group(s) as '{fmt.lower()}' to '{output_dir / 'fmt' / fmt.lower()}'..."
     )
 
+    source_svg = args.svg_file
+    cleaned_temp_svg: Path | None = None
+    if args.no_mark_numbers and not args.dry_run:
+        cleaned_temp_svg = remove_mark_number_indicators(args.svg_file)
+        source_svg = cleaned_temp_svg
+
     exported_count = 0
-    for node in targets:
-        try:
-            export_group(
-                svg_file=args.svg_file,
-                node=node,
-                fmt=fmt,
-                output_base_dir=output_dir,
-                dpi=args.dpi,
-                timeout=args.timeout,
-                dry_run=args.dry_run,
-                verbose=args.verbose,
-                no_mark_numbers=args.no_mark_numbers,
-            )
-            exported_count += 1
-        except Exception as e:
-            print(f"Error exporting [{node.id}] '{node.label}': {e}", file=sys.stderr)
-            return 1
+    try:
+        for node in targets:
+            try:
+                export_group(
+                    svg_file=source_svg,
+                    node=node,
+                    fmt=fmt,
+                    output_base_dir=output_dir,
+                    dpi=args.dpi,
+                    timeout=args.timeout,
+                    dry_run=args.dry_run,
+                    verbose=args.verbose,
+                    no_mark_numbers=False,
+                )
+                exported_count += 1
+            except Exception as e:
+                print(f"Error exporting [{node.id}] '{node.label}': {e}", file=sys.stderr)
+                return 1
+    finally:
+        if cleaned_temp_svg and cleaned_temp_svg.exists():
+            cleaned_temp_svg.unlink(missing_ok=True)
 
     action_label = "Would export" if args.dry_run else "Successfully exported"
     print(f"{action_label} {exported_count} group(s).")
