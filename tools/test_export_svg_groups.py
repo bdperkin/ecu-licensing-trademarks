@@ -10,12 +10,16 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
+from lxml import etree
+
 from tools.export_svg_groups import (
+    INKSCAPE_NS,
     filter_groups,
     get_supported_formats,
     main,
     normalize_slug,
     parse_svg_groups,
+    remove_mark_number_indicators,
     verify_exported_file,
 )
 
@@ -445,6 +449,124 @@ class TestExportSvgGroups(unittest.TestCase):
             expected_file = out_path / "fmt" / "xaml" / "primary-mark" / "mark-5.xaml"
             self.assertTrue(expected_file.exists())
             self.assertGreater(expected_file.stat().st_size, 0)
+
+    def test_remove_mark_number_indicators_function(self) -> None:
+        """Test remove_mark_number_indicators directly on SVG DOM."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cleaned_svg = Path(tmpdir) / "cleaned.svg"
+            remove_mark_number_indicators(SAMPLE_SVG, output_path=cleaned_svg)
+            self.assertTrue(cleaned_svg.exists())
+
+            tree = etree.parse(str(cleaned_svg))
+            root = tree.getroot()
+            ink_label = f"{{{INKSCAPE_NS}}}label"
+
+            # Verify that for Mark 45, the child labeled '45' is gone, but other children remain
+            mark45 = root.xpath(
+                '//svg:g[@inkscape:label="Mark 45"]',
+                namespaces={"svg": "http://www.w3.org/2000/svg", "inkscape": INKSCAPE_NS},
+            )
+            self.assertEqual(len(mark45), 1)
+            child_labels = [c.get(ink_label) for c in mark45[0]]
+            self.assertNotIn("45", child_labels)
+            self.assertIn("45 Background", child_labels)
+            self.assertIn("45 Mark", child_labels)
+
+            # Verify that for Mark 1, the child labeled '1' is gone
+            mark1 = root.xpath(
+                '//svg:g[@inkscape:label="Mark 1"]',
+                namespaces={"svg": "http://www.w3.org/2000/svg", "inkscape": INKSCAPE_NS},
+            )
+            self.assertEqual(len(mark1), 1)
+            child_labels_1 = [c.get(ink_label) for c in mark1[0]]
+            self.assertNotIn("1", child_labels_1)
+            self.assertIn("1 Background", child_labels_1)
+            self.assertIn("1 Primary Mark", child_labels_1)
+
+    def test_remove_mark_number_indicators_target_group_only(self) -> None:
+        """Test remove_mark_number_indicators targeting a specific group ID."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cleaned_svg = Path(tmpdir) / "cleaned_single.svg"
+            # Target Mark 45 (id: g4500000)
+            remove_mark_number_indicators(
+                SAMPLE_SVG, output_path=cleaned_svg, target_group_id="g4500000"
+            )
+            self.assertTrue(cleaned_svg.exists())
+
+            tree = etree.parse(str(cleaned_svg))
+            root = tree.getroot()
+            ink_label = f"{{{INKSCAPE_NS}}}label"
+
+            # Mark 45 should have child '45' removed
+            mark45 = root.xpath(
+                '//svg:g[@inkscape:label="Mark 45"]',
+                namespaces={"svg": "http://www.w3.org/2000/svg", "inkscape": INKSCAPE_NS},
+            )
+            child_labels_45 = [c.get(ink_label) for c in mark45[0]]
+            self.assertNotIn("45", child_labels_45)
+
+            # Mark 1 should still retain child '1'
+            mark1 = root.xpath(
+                '//svg:g[@inkscape:label="Mark 1"]',
+                namespaces={"svg": "http://www.w3.org/2000/svg", "inkscape": INKSCAPE_NS},
+            )
+            child_labels_1 = [c.get(ink_label) for c in mark1[0]]
+            self.assertIn("1", child_labels_1)
+
+    def test_cli_no_mark_numbers_dry_run(self) -> None:
+        """Test --no-mark-numbers CLI option in dry-run mode."""
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            exit_code = main(
+                [
+                    str(SAMPLE_SVG),
+                    "--pattern",
+                    "^Mark 45$",
+                    "--no-mark-numbers",
+                    "--dry-run",
+                ]
+            )
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn('[DRY-RUN] Would export: [g4500000] "Mark 45"', output)
+
+    def test_cli_no_mark_numbers_real_export(self) -> None:
+        """Test real export with --no-mark-numbers excludes the indicator child group."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(SAMPLE_SVG),
+                        "--pattern",
+                        "^Mark 45$",
+                        "--no-mark-numbers",
+                        "--format",
+                        "svg",
+                        "--output-dir",
+                        str(out_path),
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+
+            exported_file = (
+                out_path / "fmt" / "svg" / "sport-specific-marks" / "gold-on-black" / "mark-45.svg"
+            )
+            self.assertTrue(exported_file.exists())
+            self.assertGreater(exported_file.stat().st_size, 0)
+
+            tree = etree.parse(str(exported_file))
+            elem_ids = [e.get("id") for e in tree.getroot().iter() if e.get("id")]
+
+            # Child group '45' has ID 'g4500004' in the master SVG; it must not be present in exported SVG
+            self.assertNotIn("g4500004", elem_ids)
+            # Artwork elements '45 Background' (g4500001) and '45 Mark' (g4500007) must be present
+            self.assertIn("g4500001", elem_ids)
+            self.assertIn("g4500007", elem_ids)
 
 
 if __name__ == "__main__":

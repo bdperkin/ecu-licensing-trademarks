@@ -63,6 +63,7 @@ python3 tools/audit_svg.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg -c f
 - **Format discovery (`-F`, `--list-formats`, `--formats`)**: Dynamically queries the local Inkscape CLI and lists all supported export formats.
 - **Format validation**: Validates requested formats against dynamically discovered formats and reports allowed formats if unsupported.
 - **Full document export (`-a`, `--all`, `--full`, `--document`)**: Exports the entire SVG canvas as-is to `<output_dir>/fmt/<format>/<basename>.<format>`.
+- **Mark number indicator exclusion (`--no-mark-numbers`, `--hide-mark-numbers`, `--no-mark-indicators`, `--hide-mark-indicators`, `--no-indicators`)**: Hides/removes child mark number identifier groups (e.g. child group labeled `45` in `Mark 45`) before exporting.
 - **Verbose logging (`-v`, `--verbose`)**: Enables detailed logging and displays exact subprocess CLI commands and progress.
 - **Configurable timeout (`-t`, `--timeout`)**: Sets the maximum execution timeout in seconds for individual Inkscape export processes (default: `120.0s`).
 - **Hierarchy preservation**: Exports into `<output_dir>/fmt/<format>/<ancestor_1>/<ancestor_2>/.../<leaf_name>.<format>` with lowercase hyphenated slugs.
@@ -78,6 +79,9 @@ python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.
 
 # Export a single mark to SVG:
 python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "Mark 5"
+
+# Export Mark 45 without its visual number indicator badge:
+python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --pattern "^Mark 45$" --no-mark-numbers
 
 # Export marks 1 through 5 to PNG format:
 python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --group "^Mark [1-5]$" --format png
