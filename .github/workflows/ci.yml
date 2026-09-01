@@ -17,6 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Install Inkscape & ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y inkscape imagemagick
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -24,6 +29,9 @@ jobs:
 
       - name: Set up Python
         run: uv python install 3.11
+
+      - name: Install Astral ty
+        run: uv tool install ty
 
       - name: Install dev dependencies
         run: uv sync --all-extras --dev
@@ -50,6 +58,9 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --all-extras --dev
+
+      - name: Check Lockfile Parity
+        run: uv lock --check
 
       - name: Run Ruff Lint Check
         run: uv run ruff check .

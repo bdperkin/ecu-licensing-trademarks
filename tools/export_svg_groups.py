@@ -351,14 +351,6 @@ def export_group(
     dry_run: bool = False,
     verbose: bool = False,
 ) -> Path:
-    """Export an individual group element to the destination fmt hierarchy."""
-    inkscape_path = shutil.which("inkscape")
-    if not inkscape_path:
-        msg = "Inkscape CLI executable ('inkscape') is required for exporting groups."
-        raise RuntimeError(msg)
-
-    magick_path = shutil.which("magick") or shutil.which("convert")
-
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
     fmt_dir = output_base_dir / "fmt" / fmt_clean
@@ -372,6 +364,12 @@ def export_group(
     output_file = target_dir / f"{leaf_name}.{fmt_clean}"
 
     if not dry_run:
+        inkscape_path = shutil.which("inkscape")
+        if not inkscape_path:
+            msg = "Inkscape CLI executable ('inkscape') is required for exporting groups."
+            raise RuntimeError(msg)
+
+        magick_path = shutil.which("magick") or shutil.which("convert")
         target_dir.mkdir(parents=True, exist_ok=True)
 
         if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
@@ -652,14 +650,6 @@ def export_full_document(
     dry_run: bool = False,
     verbose: bool = False,
 ) -> Path:
-    """Export the entire SVG document canvas without group isolation."""
-    inkscape_path = shutil.which("inkscape")
-    if not inkscape_path:
-        msg = "Inkscape CLI executable ('inkscape') is required for document export."
-        raise RuntimeError(msg)
-
-    magick_path = shutil.which("magick") or shutil.which("convert")
-
     # 1. Format directory: <output_base_dir>/fmt/<format>/
     fmt_clean = fmt.strip().lstrip(".").lower()
     fmt_dir = output_base_dir / "fmt" / fmt_clean
@@ -668,6 +658,12 @@ def export_full_document(
     output_file = fmt_dir / f"{svg_file.stem}.{fmt_clean}"
 
     if not dry_run:
+        inkscape_path = shutil.which("inkscape")
+        if not inkscape_path:
+            msg = "Inkscape CLI executable ('inkscape') is required for document export."
+            raise RuntimeError(msg)
+
+        magick_path = shutil.which("magick") or shutil.which("convert")
         fmt_dir.mkdir(parents=True, exist_ok=True)
 
         if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
