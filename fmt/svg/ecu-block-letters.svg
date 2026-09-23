@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="144.06844"
+   height="172.02739"
+   viewBox="-5.291666330349528 -5.2916666761343985 38.11810566069906 45.51558035226879"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer2"
+     style="display:inline"
+     transform="translate(-5.4725347,-3.4659383)">
+    <path
+       id="path19"
+       style="display:inline;fill:#502875;fill-opacity:1"
+       d="M 5.4725342,3.4659383 V 27.270604 H 21.342878 v -3.907178 l -10.945071,3.4e-5 v -8.223208 h 3.830162 v -4.0132 l -3.830154,4e-6 V 7.47913 H 21.342883 V 3.4659383 Z" />
+    <path
+       id="path12"
+       style="display:inline;fill:#502875;fill-opacity:1"
+       d="m 13.408025,35.84231 2.543968,2.46433 12.223026,6.6e-5 2.653585,-2.636015 v -5.025016 h -4.925281 v 3.283169 H 18.333244 V 16.964025 h 7.570071 v 3.283837 h 4.925281 v -5.007963 l -2.636002,-2.653587 -12.218375,-8.3e-5 -2.566194,2.554023 z" />
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:1.73261px;line-height:10.05;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans Bold';text-align:center;text-anchor:middle;display:inline;fill:#502875;fill-opacity:1;stroke:none;stroke-width:0.108288"
+       x="36.288437"
+       y="33.867115"
+       id="text24"
+       transform="scale(0.88199777,1.1337897)"><tspan
+         id="tspan24"
+         style="fill:#502875;fill-opacity:1;stroke:none;stroke-width:0.108288"
+         x="36.288437"
+         y="33.867115">TM</tspan></text>
+  </g>
+</svg>

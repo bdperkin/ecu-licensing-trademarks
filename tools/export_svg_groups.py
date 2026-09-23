@@ -394,6 +394,8 @@ def add_margin_to_svg(svg_path: Path, margin: float) -> None:
     """Adjust the viewBox and width/height of an SVG document to add canvas margin on all sides.
 
     If margin <= 0, no changes are made.
+    Scales the viewBox expansion proportionally when viewBox coordinates are in units
+    different from pixels (such as millimeters or points).
     """
     if margin <= 0 or not svg_path.exists():
         return
@@ -406,24 +408,81 @@ def add_margin_to_svg(svg_path: Path, margin: float) -> None:
             parts = [float(v) for v in vb.split()]
             if len(parts) == 4:
                 min_x, min_y, w, h = parts
-                new_vb = f"{min_x - margin} {min_y - margin} {w + 2 * margin} {h + 2 * margin}"
-                root.set("viewBox", new_vb)
 
                 width_attr = root.get("width")
+                height_attr = root.get("height")
+
+                orig_w_px: float | None = None
+                orig_h_px: float | None = None
+                orig_w_val: float | None = None
+                orig_h_val: float | None = None
+
                 if width_attr:
                     try:
-                        orig_w = float(re.sub(r"[^\d.]", "", width_attr))
-                        root.set("width", str(orig_w + 2 * margin))
-                    except ValueError:
+                        m_w = re.match(
+                            r"^([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$",
+                            width_attr.strip(),
+                        )
+                        if m_w:
+                            orig_w_val = float(m_w.group(1))
+                            unit_w = m_w.group(2).lower()
+                            if unit_w == "mm":
+                                orig_w_px = orig_w_val * (96.0 / 25.4)
+                            elif unit_w == "cm":
+                                orig_w_px = orig_w_val * (96.0 / 2.54)
+                            elif unit_w == "in":
+                                orig_w_px = orig_w_val * 96.0
+                            elif unit_w == "pt":
+                                orig_w_px = orig_w_val * (96.0 / 72.0)
+                            elif unit_w == "pc":
+                                orig_w_px = orig_w_val * 16.0
+                            else:
+                                orig_w_px = orig_w_val
+                    except Exception:
                         pass
 
-                height_attr = root.get("height")
                 if height_attr:
                     try:
-                        orig_h = float(re.sub(r"[^\d.]", "", height_attr))
-                        root.set("height", str(orig_h + 2 * margin))
-                    except ValueError:
+                        m_h = re.match(
+                            r"^([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$",
+                            height_attr.strip(),
+                        )
+                        if m_h:
+                            orig_h_val = float(m_h.group(1))
+                            unit_h = m_h.group(2).lower()
+                            if unit_h == "mm":
+                                orig_h_px = orig_h_val * (96.0 / 25.4)
+                            elif unit_h == "cm":
+                                orig_h_px = orig_h_val * (96.0 / 2.54)
+                            elif unit_h == "in":
+                                orig_h_px = orig_h_val * 96.0
+                            elif unit_h == "pt":
+                                orig_h_px = orig_h_val * (96.0 / 72.0)
+                            elif unit_h == "pc":
+                                orig_h_px = orig_h_val * 16.0
+                            else:
+                                orig_h_px = orig_h_val
+                    except Exception:
                         pass
+
+                scale_x = (orig_w_px / w) if (orig_w_px and w > 0) else 1.0
+                scale_y = (orig_h_px / h) if (orig_h_px and h > 0) else 1.0
+
+                margin_vb_x = margin / scale_x
+                margin_vb_y = margin / scale_y
+
+                new_min_x = min_x - margin_vb_x
+                new_min_y = min_y - margin_vb_y
+                new_w = w + 2 * margin_vb_x
+                new_h = h + 2 * margin_vb_y
+
+                root.set("viewBox", f"{new_min_x} {new_min_y} {new_w} {new_h}")
+
+                if orig_w_val is not None:
+                    root.set("width", str(orig_w_val + 2 * margin))
+
+                if orig_h_val is not None:
+                    root.set("height", str(orig_h_val + 2 * margin))
 
                 tree.write(str(svg_path), encoding="utf-8", xml_declaration=True)
     except Exception:
@@ -863,19 +922,21 @@ def export_full_document(
             if verbose:
                 print("[VERBOSE] Removed mark number indicators from full document")
 
-        # Calculate document bounding area with margin if margin > 0
-        area_arg: str | None = None
-        if margin > 0:
-            try:
-                doc_tree = etree.parse(str(active_svg))
-                vb = doc_tree.getroot().get("viewBox")
-                if vb:
-                    parts = [float(v) for v in vb.split()]
-                    if len(parts) == 4:
-                        min_x, min_y, w, h = parts
-                        area_arg = f"{min_x - margin}:{min_y - margin}:{min_x + w + margin}:{min_y + h + margin}"
-            except Exception:
-                pass
+        # Determine effective margin:
+        # Pre-formatted export files under 'fmt/' should not receive additional margin by default
+        # when converting to other formats.
+        is_fmt_export = "fmt" in svg_file.parts or svg_file.resolve().parent.name == "svg"
+        effective_margin = 0.0 if is_fmt_export and margin == DEFAULT_MARGIN else margin
+
+        tmp_margin_svg: Path | None = None
+        if effective_margin > 0:
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_m:
+                tmp_margin_svg = Path(tmp_m.name)
+            shutil.copy2(active_svg, tmp_margin_svg)
+            add_margin_to_svg(tmp_margin_svg, effective_margin)
+            active_svg = tmp_margin_svg
+            if verbose:
+                print(f"[VERBOSE] Applied canvas margin of {effective_margin}px to full document")
 
         try:
             if fmt_clean in ("svg", "png", "pdf", "eps", "ps"):
@@ -889,9 +950,6 @@ def export_full_document(
                     cmd.append("--export-plain-svg")
                 elif fmt_clean == "png":
                     cmd.append(f"--export-dpi={dpi}")
-
-                if fmt_clean in ("png", "pdf", "eps", "ps") and area_arg:
-                    cmd.append(f"--export-area={area_arg}")
 
                 if verbose:
                     print(f"[VERBOSE] Running: {' '.join(cmd)}")
@@ -923,9 +981,6 @@ def export_full_document(
                     )
                     raise RuntimeError(msg)
 
-                if fmt_clean == "svg" and margin > 0:
-                    add_margin_to_svg(output_file, margin)
-
             elif fmt_clean in RASTER_CONVERT_FORMATS and magick_path:
                 # High-fidelity raster pipeline for full document
                 with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_png:
@@ -938,8 +993,6 @@ def export_full_document(
                         f"--export-dpi={dpi}",
                         f"--export-filename={tmp_png_path}",
                     ]
-                    if area_arg:
-                        render_cmd.append(f"--export-area={area_arg}")
 
                     if verbose:
                         print(f"[VERBOSE] Rendering full document PNG: {' '.join(render_cmd)}")
@@ -996,47 +1049,36 @@ def export_full_document(
                         tmp_png_path.unlink()
 
             elif fmt_clean in ARCHIVE_FORMATS:
-                archive_source_svg = active_svg
-                tmp_margin_svg: Path | None = None
-                if margin > 0:
-                    with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
-                        tmp_margin_svg = Path(tmp_svg.name)
-                    shutil.copy2(active_svg, tmp_margin_svg)
-                    add_margin_to_svg(tmp_margin_svg, margin)
-                    archive_source_svg = tmp_margin_svg
-
                 try:
                     if fmt_clean == "tar":
                         with tarfile.open(output_file, "w") as tar:
-                            tar.add(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                            tar.add(active_svg, arcname=f"{svg_file.stem}.svg")
                     elif fmt_clean == "zip":
                         with zipfile.ZipFile(
                             output_file, "w", compression=zipfile.ZIP_DEFLATED
                         ) as zf:
-                            zf.write(archive_source_svg, arcname=f"{svg_file.stem}.svg")
+                            zf.write(active_svg, arcname=f"{svg_file.stem}.svg")
                     elif fmt_clean == "svgz":
                         with (
-                            archive_source_svg.open("rb") as f_in,
+                            active_svg.open("rb") as f_in,
                             gzip.open(output_file, "wb") as f_out,
                         ):
                             f_out.writelines(f_in)
-                finally:
-                    if tmp_margin_svg and tmp_margin_svg.exists():
-                        tmp_margin_svg.unlink(missing_ok=True)
+                except Exception as e:
+                    msg = f"Failed to create archive '{output_file}': {e}"
+                    raise RuntimeError(msg) from e
 
             elif fmt_clean == "xaml":
                 # XAML extension requires layers for resources; annotate copy of document
-                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_svg:
-                    tmp_svg_path = Path(tmp_svg.name)
+                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp_xaml_svg:
+                    tmp_xaml_svg_path = Path(tmp_xaml_svg.name)
                 try:
-                    shutil.copy2(active_svg, tmp_svg_path)
-                    annotate_svg_layers(tmp_svg_path, default_label=svg_file.stem)
-                    if margin > 0:
-                        add_margin_to_svg(tmp_svg_path, margin)
+                    shutil.copy2(active_svg, tmp_xaml_svg_path)
+                    annotate_svg_layers(tmp_xaml_svg_path, default_label=svg_file.stem)
 
                     cmd = [
                         inkscape_path,
-                        str(tmp_svg_path),
+                        str(tmp_xaml_svg_path),
                         f"--export-filename={output_file}",
                     ]
                     if verbose:
@@ -1073,8 +1115,8 @@ def export_full_document(
                         )
                         raise RuntimeError(msg)
                 finally:
-                    if tmp_svg_path.exists():
-                        tmp_svg_path.unlink()
+                    if tmp_xaml_svg_path.exists():
+                        tmp_xaml_svg_path.unlink()
 
             else:
                 # Fallback direct invocation for other formats
@@ -1118,6 +1160,8 @@ def export_full_document(
                     )
                     raise RuntimeError(msg)
         finally:
+            if tmp_margin_svg and tmp_margin_svg.exists():
+                tmp_margin_svg.unlink()
             if tmp_cleaned_svg and tmp_cleaned_svg.exists():
                 tmp_cleaned_svg.unlink()
 

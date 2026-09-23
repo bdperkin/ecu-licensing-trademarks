@@ -32,7 +32,7 @@
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer2" />
   <defs
      id="defs1" />
   <g
@@ -59,7 +59,10 @@
        style="display:inline;fill:#502875;fill-opacity:1"
        d="M 5.4725342,3.4659383 V 27.270604 H 21.342878 v -3.907178 l -10.945071,3.4e-5 v -8.223208 h 3.830162 v -4.0132 l -3.830154,4e-6 V 7.47913 H 21.342883 V 3.4659383 Z"
        inkscape:label="E"
-       sodipodi:nodetypes="ccccccccccccc" />
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:export-filename="ecu-block-letters-export.svg"
+       inkscape:export-xdpi="229.33"
+       inkscape:export-ydpi="229.33" />
     <path
        id="path12"
        style="display:inline;fill:#502875;fill-opacity:1"

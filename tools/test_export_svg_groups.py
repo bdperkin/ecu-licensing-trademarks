@@ -213,6 +213,39 @@ class TestExportSvgGroups(unittest.TestCase):
             )
             self.assertGreater(expected_file.stat().st_size, 0)
 
+    def test_full_document_export_fmt_svg_to_png(self) -> None:
+        """Test exporting an SVG already residing in fmt/svg/ to raster format without cropping."""
+        if not shutil.which("inkscape"):
+            self.skipTest("Inkscape CLI not installed in environment")
+
+        svg_content = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="144.0" height="172.0" '
+            'viewBox="-5.0 -5.0 38.0 45.0"><rect x="0" y="0" width="28" height="35" fill="purple"/></svg>'
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_dir = Path(tmpdir)
+            fmt_svg_dir = base_dir / "fmt" / "svg"
+            fmt_svg_dir.mkdir(parents=True, exist_ok=True)
+            test_svg = fmt_svg_dir / "test-mark.svg"
+            test_svg.write_text(svg_content)
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        str(test_svg),
+                        "--full",
+                        "--format",
+                        "png",
+                        "--output-dir",
+                        str(base_dir),
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            expected_png = base_dir / "fmt" / "png" / "test-mark.png"
+            self.assertTrue(expected_png.exists(), f"Expected file {expected_png} was not created.")
+            self.assertGreater(expected_png.stat().st_size, 0)
+
     def test_get_supported_formats(self) -> None:
         """Test dynamic discovery of supported Inkscape export formats."""
         formats = get_supported_formats()
@@ -594,6 +627,47 @@ class TestExportSvgGroups(unittest.TestCase):
             add_margin_to_svg(p, 0.0)
             tree0 = etree.parse(str(p))
             self.assertEqual(tree0.getroot().get("viewBox"), "-20.0 -20.0 140.0 240.0")
+
+    def test_add_margin_to_svg_scaled_units(self) -> None:
+        """Test add_margin_to_svg proportionally scales viewBox margin when units differ."""
+        # SVG with 104px width and ~27.5mm viewBox (standard 3.7795 px/mm Inkscape ratio)
+        svg_content = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="104.06844" height="132.02739" '
+            'viewBox="0 0 27.534773 34.932247"><rect x="0" y="0" width="27" height="34"/></svg>'
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir) / "scaled.svg"
+            p.write_text(svg_content)
+
+            add_margin_to_svg(p, 20.0)
+            tree = etree.parse(str(p))
+            root = tree.getroot()
+            self.assertEqual(root.get("width"), "144.06844")
+            self.assertEqual(root.get("height"), "172.02739")
+
+            vb_attr = root.get("viewBox")
+            self.assertIsNotNone(vb_attr)
+            assert vb_attr is not None
+            vb_parts = [float(v) for v in vb_attr.split()]
+            self.assertEqual(len(vb_parts), 4)
+            min_x, min_y, vb_w, vb_h = vb_parts
+
+            width_attr = root.get("width")
+            height_attr = root.get("height")
+            self.assertIsNotNone(width_attr)
+            self.assertIsNotNone(height_attr)
+            assert width_attr is not None
+            assert height_attr is not None
+
+            # Check that scale ratio (px per viewBox unit) is preserved
+            scale_x = float(width_attr) / vb_w
+            scale_y = float(height_attr) / vb_h
+            orig_scale = 104.06844 / 27.534773
+            self.assertAlmostEqual(scale_x, orig_scale, places=4)
+            self.assertAlmostEqual(scale_y, orig_scale, places=4)
+            # Check that margin in pixels is exactly 20.0
+            self.assertAlmostEqual(-min_x * orig_scale, 20.0, places=4)
+            self.assertAlmostEqual(-min_y * orig_scale, 20.0, places=4)
 
     def test_get_element_bounding_boxes(self) -> None:
         """Test get_element_bounding_boxes returns parsed element coordinates."""
