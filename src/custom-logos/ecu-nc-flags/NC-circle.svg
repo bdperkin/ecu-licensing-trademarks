@@ -4,7 +4,7 @@
    width="500"
    height="500"
    id="svg45"
-   sodipodi:docname="NC.svg"
+   sodipodi:docname="NC-circle.svg"
    inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
    inkscape:export-filename="NC.png"
    inkscape:export-xdpi="229.33"
@@ -36,10 +36,10 @@
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="1.159"
-     inkscape:cx="405.0906"
-     inkscape:cy="249.7843"
-     inkscape:window-width="2560"
-     inkscape:window-height="1368"
+     inkscape:cx="414.15013"
+     inkscape:cy="230.80242"
+     inkscape:window-width="1920"
+     inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -48,7 +48,8 @@
      id="g46"
      style="display:inline"
      clip-path="url(#clipPath46)"
-     transform="translate(-220)">
+     transform="translate(-220)"
+     inkscape:label="Circle Flag of North Carolina">
     <path
        style="font-size:12px;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke-width:1.43966"
        d="m 250,0.04289868 h 750 V 499.99743 H 250 Z"

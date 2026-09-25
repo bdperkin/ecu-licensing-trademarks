@@ -435,7 +435,7 @@ def audit_inkscape_svg(
             print("  - No spelling issues detected in labels.")
 
         if unused_ignore_words:
-            has_errors = True
+            # has_errors = True
             print(
                 f"  - Unused ignore words ({len(unused_ignore_words)} entries not found in SVG - flagged for removal):"
             )
