@@ -1,0 +1,15 @@
+# Official East Carolina University (ECU) Trademark Licensing Color Palette
+# Reference: OFFICIAL_COLORS.md
+
+# Core Palette
+#582C83  # ECU Purple (PMS 268 C/U)
+#FFC700  # ECU Gold - Uncoated (PMS 109 U)
+#FFC72C  # ECU Gold - Coated (PMS 123 C)
+
+# Accent Colors
+#000000  # Black (Process Black C)
+#FFFFFF  # White
+#9D2235  # Red / Crimson (PMS 201 C)
+
+# Legacy Mark (Pirate Head) Palette
+#D3A985  # Beige / Skin Tone (PMS 728 C/U)

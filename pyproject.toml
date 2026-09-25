@@ -15,17 +15,27 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "numpy>=2.5.3",
     "pip-audit>=2.10.1",
     "pre-commit>=4.6.2",
     "ruff>=0.9.0",
+    "scipy>=1.18.1",
+    "smallestenclosingcircle>=0.0.1",
+    "svgpathtools>=1.8.0",
+    "svgwrite>=1.4.3",
     "types-lxml>=2026.2.16",
 ]
 
 [dependency-groups]
 dev = [
+    "numpy>=2.5.3",
     "pip-audit>=2.10.1",
     "pre-commit>=4.6.2",
     "ruff>=0.9.0",
+    "scipy>=1.18.1",
+    "smallestenclosingcircle>=0.0.1",
+    "svgpathtools>=1.8.0",
+    "svgwrite>=1.4.3",
     "types-lxml>=2026.2.16",
 ]
 

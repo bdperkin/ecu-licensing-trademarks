@@ -10,8 +10,12 @@ This directory contains automated audit scripts, group extraction utilities, uni
 tools/
 ├── audit_svg.py               # Main automated SVG structural and labeling audit tool
 ├── test_audit_svg.py          # Unit test suite covering all 8 audit check routines
+├── color_svg.py               # SVG color inspection, palette validation, and substitution tool (symlinked as svg_colors.py)
+├── test_color_svg.py          # Unit test suite for color_svg.py
+├── draw_circle.py             # Minimum enclosing bounding circle extraction and generator
 ├── export_svg_groups.py       # SVG group hierarchy inspector, tree viewer, and batch exporter
 ├── test_export_svg_groups.py  # Unit test suite for export_svg_groups.py
+├── palette.txt                # Approved official ECU color palette definition for validation
 ├── wordlist.txt               # Approved proper nouns, acronyms, and trademarks for spellchecking
 └── duplicates.txt             # Duplicate group label ignore list (0 entries; all labels are globally unique)
 ```
@@ -95,6 +99,64 @@ python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.
 
 # Export all 25 top-level sections into ./dist:
 python3 tools/export_svg_groups.py src/art-sheet-5-8-23/2023-05-08-art-sheet-01.svg --format svg --output-dir ./dist
+```
+
+---
+
+## `color_svg.py` Overview
+
+`color_svg.py` (also callable as `svg_colors.py`) inspects, validates, and substitutes colors in SVG vector graphics.
+
+### Core Features
+
+1. **Color Extraction & Display**:
+   - Parses colors from presentation attributes (`fill`, `stroke`, `stop-color`, `flood-color`, `lighting-color`), inline `style` declarations, and embedded `<style>` stylesheets.
+   - Normalizes all colors to standard uppercase RGB hex format (`#RRGGBB`).
+   - Reports exact occurrence counts for each color.
+   - Generates descriptive comments identifying official brand names (e.g. `ECU Purple`, `ECU Gold`), CSS named colors, and general color shades / families (e.g. `Dark Purple`, `Vivid Gold`, `Near Black`, `Warm Tan`).
+   - Supports sorting by count (`--sort count`, default), hex code (`--sort hex`), or shade name (`--sort name`), as well as JSON output (`--json`) and detailed element-level breakdowns (`-v`, `--details`).
+
+2. **Palette Validation Mode (`--validate`)**:
+   - Validates that every color in the SVG is present in an approved color palette.
+   - Palettes can be specified via preset (`--palette official`), palette files (`--palette tools/palette.txt`), or comma-separated lists (`--palette "#582C83,#FFC700,#000000,#FFFFFF"`).
+   - If any color violates the palette, outputs an error reporting each violating color, its occurrence count, and shade description, exiting with return code `1`.
+   - Returns exit code `0` when all colors are valid.
+
+3. **Color Replacement & Substitution (`-r`, `--replace`)**:
+   - Finds specified RGB hex colors and substitutes them with target values across all SVG attributes, inline styles, and `<style>` blocks.
+   - Preserves original XML tag formatting, line wraps, comments, and namespaces outside of the replaced color values.
+   - Multiple substitutions can be executed in a single atomic pass (e.g. `-r OLD1 NEW1 -r OLD2 NEW2`).
+   - Supports writing to a new file (`-o`, `--output`) or modifying in-place (`-i`, `--in-place`).
+
+4. **Dry-Run Preview Mode (`-d`, `--dry-run`)**:
+   - Simulates planned color replacements without altering any files on disk.
+   - Displays affected elements, line numbers, attributes, original values, and target values.
+   - Automatically activates if color replacement is requested without `-o` or `-i`, preventing accidental modifications.
+
+### Color Tool CLI Usage Examples
+
+```bash
+# Display colors, occurrence counts, and shade comments:
+python3 tools/color_svg.py fmt/svg/ecu-vintage-peedee-fullbody.svg
+
+# Output color analysis as structured JSON:
+python3 tools/color_svg.py fmt/svg/ecu-vintage-peedee-fullbody.svg --json
+
+# Validate an SVG against official ECU brand colors:
+python3 tools/color_svg.py fmt/svg/ecu-vintage-peedee-fullbody.svg --validate --palette official
+
+# Validate against a custom palette file or comma-separated list:
+python3 tools/color_svg.py logo.svg --validate --palette tools/palette.txt
+python3 tools/color_svg.py logo.svg --validate --palette "#582C83,#FFC700,#000000,#FFFFFF"
+
+# Preview color replacement in dry-run mode:
+python3 tools/color_svg.py src/alt-logos/ecu-legacy-pirate-head.svg -r "#2F2976" "#582C83" --dry-run
+
+# Replace multiple colors and save to a new output file:
+python3 tools/color_svg.py logo.svg -r "#2F2976" "#582C83" -r "#FDD50E" "#FFC700" -o logo-fixed.svg
+
+# Replace colors in-place directly on disk:
+python3 tools/color_svg.py logo.svg -r "#2F2976" "#582C83" -i
 ```
 
 ---
