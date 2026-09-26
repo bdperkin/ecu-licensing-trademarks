@@ -13,3 +13,14 @@
 
 # Legacy Mark (Pirate Head) Palette
 #D3A985  # Beige / Skin Tone (PMS 728 C/U)
+
+# Light Gray
+#A2A9AD  # Light Gray (nearest: Darkgray)
+
+# Sky Blue
+#0060A9  # Sky Blue
+
+# NC Flag
+#00205B  # Dark Sky Blue (nearest: Midnightblue)
+#BF0A30  # Vivid Red (nearest: Crimson)
+#FFCA00  # Vivid Gold / Amber (nearest: Gold)
