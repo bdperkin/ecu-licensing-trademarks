@@ -4,13 +4,6 @@
    width="500"
    height="500"
    id="svg45"
-   sodipodi:docname="ECU-NC-circle.svg"
-   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
-   inkscape:export-filename="ECU-NC.png"
-   inkscape:export-xdpi="298.17599"
-   inkscape:export-ydpi="298.17599"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
@@ -19,43 +12,24 @@
        clipPathUnits="userSpaceOnUse"
        id="clipPath46">
       <circle
-         style="display:inline;opacity:0.4;fill:#00205B;stroke:none;stroke-width:0;stroke-linecap:square;stroke-dasharray:none"
+         style="display:inline;opacity:0.4;fill:#00205b;stroke:none;stroke-width:0;stroke-linecap:square;stroke-dasharray:none"
          id="circle46"
          cx="470"
          cy="250"
          r="250" />
     </clipPath>
   </defs>
-  <sodipodi:namedview
-     id="namedview45"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="true"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.598"
-     inkscape:cx="256.8836"
-     inkscape:cy="256.25782"
-     inkscape:window-width="1920"
-     inkscape:window-height="1008"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg45" />
   <g
      id="g46"
      style="display:inline"
      clip-path="url(#clipPath46)"
-     transform="translate(-220)"
-     inkscape:label="ECU Circle Flag of North Carolina">
+     transform="translate(-220)">
     <path
-       style="font-size:12px;fill:#ffc72c;fill-opacity:1;fill-rule:evenodd;stroke-width:1.43966"
+       style="font-size:12px;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke-width:1.43966"
        d="m 250,0.04289868 h 750 V 499.99743 H 250 Z"
        id="path1" />
     <path
-       style="font-size:12px;fill:#582c83;fill-opacity:1;fill-rule:evenodd;stroke-width:1.01769"
+       style="font-size:12px;fill:#bf0a30;fill-opacity:1;fill-rule:evenodd;stroke-width:1.01769"
        d="m 250,0.04289868 h 750 V 250.10761 H 250 Z"
        id="path2" />
     <path
@@ -104,7 +78,7 @@
        id="path13" />
     <path
        d="m 401.99654,290.2245 -23.79866,-18.49471 -24.42592,18.38012 9.67856,-28.78479 -24.76346,-18.22187 29.78034,0.70472 9.12126,-29.64186 8.72671,29.22034 30.4007,-0.0978 -24.38694,17.35445 z"
-       style="font-size:12px;fill:#ffc72c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.64413;stroke-dasharray:none;stroke-opacity:1"
+       style="font-size:12px;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.64413;stroke-dasharray:none;stroke-opacity:1"
        id="path14" />
     <path
        d="M 300.75768,139.26969"
